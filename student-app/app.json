@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Montessori Student",
+    "slug": "student-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo-colegio.png",
+    "scheme": "montessori-student",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/logo-colegio.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#eaf3ff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.proyectomontessori.student"
+    },
+    "android": {
+      "package": "com.proyectomontessori.student",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-colegio.png",
+        "backgroundColor": "#eaf3ff"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
