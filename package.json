@@ -7,13 +7,19 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "student:install": "npm --prefix student-app install",
+    "student:web": "npm --prefix student-app run start -- --web",
+    "student:start": "npm --prefix student-app run start"
   },
   "dependencies": {
-    "react": "19.2.3",
-    "react-native": "0.85.2",
     "@react-native/new-app-screen": "0.85.2",
-    "react-native-safe-area-context": "^5.5.2"
+    "expo": "^55.0.17",
+    "react": "19.2.3",
+    "react-dom": "19.2.0",
+    "react-native": "0.85.2",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-web": "^0.21.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

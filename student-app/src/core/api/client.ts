@@ -19,6 +19,12 @@ export function setUnauthorizedHandler(handler: () => void) {
 
 function normalizePath(path: string) {
   if (path.startsWith("http")) return path;
+  if (!env.apiBaseUrl) {
+    throw new ApiError(
+      "Falta configurar EXPO_PUBLIC_API_BASE_URL. Revisa tu archivo .env y reinicia Expo.",
+      500
+    );
+  }
   return `${env.apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
 import { useAppTheme } from "@/theme/ThemeProvider";
 
 interface AppButtonProps {
@@ -8,7 +8,7 @@ interface AppButtonProps {
   loading?: boolean;
   disabled?: boolean;
   variant?: "primary" | "ghost" | "danger";
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function AppButton({ label, onPress, loading, disabled, variant = "primary", style }: AppButtonProps) {

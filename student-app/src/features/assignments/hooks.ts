@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authedRequest } from "@/core/api/authedRequest";
+import { ApiError } from "@/core/api/error";
 import { isPastDate } from "@/core/utils/date";
 import { courseKeys } from "@/features/courses/hooks";
 import { CreateSubmissionRequest, LmsAssignmentDto, SubmissionDto } from "@/types/dto";
 
 export const assignmentKeys = {
   byCourse: (courseId: number) => ["assignments", "course", courseId] as const,
-  detail: (assignmentId: number) => ["assignments", assignmentId] as const,
+  detailFromCourse: (courseId: number, assignmentId: number) =>
+    ["assignments", "course", courseId, "detail", assignmentId] as const,
   mySubmission: (assignmentId: number) => ["assignments", assignmentId, "my-submission"] as const,
   submission: (submissionId: number) => ["submissions", submissionId] as const,
 };
@@ -19,22 +21,36 @@ export function useCourseAssignmentsQuery(courseId: number) {
   });
 }
 
-export function useAssignmentDetailQuery(assignmentId: number) {
+export function useAssignmentDetailFromCourseQuery(courseId: number, assignmentId: number) {
   return useQuery({
-    queryKey: assignmentKeys.detail(assignmentId),
+    queryKey: assignmentKeys.detailFromCourse(courseId, assignmentId),
     queryFn: async () => {
-      const assignment = await authedRequest<LmsAssignmentDto>(`/assignments/${assignmentId}`);
-      return assignment;
+      const assignments = await authedRequest<LmsAssignmentDto[]>(`/courses/${courseId}/assignments`);
+      const found = assignments.find((item) => item.id === assignmentId);
+      if (!found) {
+        throw new Error("No se encontró la tarea en este curso.");
+      }
+      return found;
     },
-    enabled: Number.isFinite(assignmentId),
+    enabled: Number.isFinite(assignmentId) && Number.isFinite(courseId),
   });
 }
 
 export function useMySubmissionQuery(assignmentId: number) {
   return useQuery({
     queryKey: assignmentKeys.mySubmission(assignmentId),
-    queryFn: () => authedRequest<SubmissionDto>(`/assignments/${assignmentId}/my-submission`),
+    queryFn: async () => {
+      try {
+        return await authedRequest<SubmissionDto>(`/assignments/${assignmentId}/my-submission`);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
     enabled: Number.isFinite(assignmentId),
+    retry: (failureCount, error) => !(error instanceof ApiError && error.status === 404) && failureCount < 1,
   });
 }
 
@@ -64,7 +80,9 @@ export function useCreateSubmissionMutation(assignmentId: number, courseId?: num
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: assignmentKeys.mySubmission(assignmentId) }),
-        queryClient.invalidateQueries({ queryKey: assignmentKeys.detail(assignmentId) }),
+        courseId
+          ? queryClient.invalidateQueries({ queryKey: assignmentKeys.detailFromCourse(courseId, assignmentId) })
+          : Promise.resolve(),
         courseId ? queryClient.invalidateQueries({ queryKey: assignmentKeys.byCourse(courseId) }) : Promise.resolve(),
       ]);
     },
@@ -84,7 +102,9 @@ export function useUpdateSubmissionMutation(assignmentId: number, submissionId: 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: assignmentKeys.mySubmission(assignmentId) }),
         queryClient.invalidateQueries({ queryKey: assignmentKeys.submission(submissionId) }),
-        queryClient.invalidateQueries({ queryKey: assignmentKeys.detail(assignmentId) }),
+        courseId
+          ? queryClient.invalidateQueries({ queryKey: assignmentKeys.detailFromCourse(courseId, assignmentId) })
+          : Promise.resolve(),
         courseId ? queryClient.invalidateQueries({ queryKey: assignmentKeys.byCourse(courseId) }) : Promise.resolve(),
         courseId ? queryClient.invalidateQueries({ queryKey: courseKeys.detail(courseId) }) : Promise.resolve(),
       ]);

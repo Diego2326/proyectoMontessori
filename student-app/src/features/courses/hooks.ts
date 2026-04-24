@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { authedRequest } from "@/core/api/authedRequest";
-import { getRequiredStudentId } from "@/core/auth/session";
+import { getOptionalStudentId } from "@/core/auth/session";
 import { AcademicModuleDto, ContentResourceDto, CourseDto } from "@/types/dto";
 
 export const courseKeys = {
@@ -12,10 +12,11 @@ export const courseKeys = {
 };
 
 export function useStudentCoursesQuery() {
-  const studentId = getRequiredStudentId();
+  const studentId = getOptionalStudentId();
   return useQuery({
     queryKey: [...courseKeys.all, studentId],
     queryFn: () => authedRequest<CourseDto[]>(`/students/${studentId}/courses`),
+    enabled: Number.isFinite(studentId),
   });
 }
 
