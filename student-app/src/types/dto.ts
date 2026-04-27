@@ -173,3 +173,30 @@ export interface StudentDashboardDto {
   gradedAssignments: number;
   unreadNotifications: number;
 }
+
+export interface HomeActivityDto {
+  id: string;
+  type: "assignment" | "material" | "event" | "announcement" | "grade" | "reminder";
+  title: string;
+  body: string;
+  createdAt: string;
+  authorName?: string;
+  authorRole?: string;
+  courseId?: number;
+  courseName?: string;
+  moduleName?: string;
+  actionLabel?: string;
+  actionHref?: string;
+  likes?: number;
+  comments?: number;
+  attachments?: HomeActivityAttachmentDto[];
+}
+
+export interface HomeActivityAttachmentDto {
+  id: string;
+  type: "image" | "document";
+  title: string;
+  subtitle?: string;
+  previewTone?: "sky" | "sun" | "mint" | "berry";
+  fileLabel?: string;
+}

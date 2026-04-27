@@ -4,6 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AppScreen } from "@/components/AppScreen";
+import { CourseShell } from "@/components/CourseShell";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
@@ -49,11 +50,12 @@ export default function FeedCommentsScreen() {
     }
   });
 
-  return (
-    <AppScreen title="Comentarios" subtitle="Conversación del anuncio" refreshing={commentsQuery.isFetching} onRefresh={commentsQuery.refetch}>
+  const isCourseContext = Number.isFinite(courseId);
+  const screenContent = (
+    <>
       {commentsQuery.isLoading && <LoadingState />}
       {commentsQuery.error && <ErrorState error={commentsQuery.error} onRetry={commentsQuery.refetch} />}
-      {!commentsQuery.isLoading && !commentsQuery.error && commentsQuery.data?.length === 0 && <EmptyState title="Sin comentarios aún" />}
+      {!commentsQuery.isLoading && !commentsQuery.error && commentsQuery.data?.length === 0 && <EmptyState title="Sin comentarios" />}
 
       {commentsQuery.data?.map((comment) => (
         <ClayCard key={comment.id} style={styles.card}>
@@ -67,9 +69,7 @@ export default function FeedCommentsScreen() {
 
       <View style={styles.form}>
         {!canComment && (
-          <Text style={{ color: theme.colors.warning, fontSize: 12 }}>
-            Los comentarios están deshabilitados en este curso.
-          </Text>
+          <Text style={{ color: theme.colors.warning, fontSize: 12 }}>Comentarios desactivados.</Text>
         )}
         <Controller
           control={control}
@@ -85,8 +85,28 @@ export default function FeedCommentsScreen() {
             />
           )}
         />
-        <AppButton label="Enviar comentario" onPress={onSubmit} loading={commentMutation.isPending} disabled={!canComment} />
+        <AppButton label="Comentar" onPress={onSubmit} loading={commentMutation.isPending} disabled={!canComment} />
       </View>
+    </>
+  );
+
+  if (isCourseContext) {
+    return (
+      <CourseShell
+        courseId={courseId as number}
+        activeSection="feed"
+        title="Comentarios"
+        refreshing={commentsQuery.isFetching}
+        onRefresh={commentsQuery.refetch}
+      >
+        {screenContent}
+      </CourseShell>
+    );
+  }
+
+  return (
+    <AppScreen title="Comentarios" refreshing={commentsQuery.isFetching} onRefresh={commentsQuery.refetch} compactHeader showAppLabel={false}>
+      {screenContent}
     </AppScreen>
   );
 }

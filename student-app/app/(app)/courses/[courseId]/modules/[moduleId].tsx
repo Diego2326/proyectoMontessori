@@ -1,7 +1,8 @@
 import React from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { AppScreen } from "@/components/AppScreen";
+import { Ionicons } from "@expo/vector-icons";
+import { CourseShell } from "@/components/CourseShell";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
@@ -10,17 +11,27 @@ import { useModuleDetailQuery, useModuleResourcesQuery } from "@/features/course
 import { AppButton } from "@/components/AppButton";
 import { useAppTheme } from "@/theme/ThemeProvider";
 
+function resourceIcon(resourceType?: string): keyof typeof Ionicons.glyphMap {
+  const value = resourceType?.toLowerCase() ?? "";
+  if (value.includes("video")) return "videocam";
+  if (value.includes("link")) return "link";
+  if (value.includes("pdf") || value.includes("doc")) return "document-text";
+  return "book";
+}
+
 export default function ModuleDetailScreen() {
-  const params = useLocalSearchParams<{ moduleId: string }>();
+  const params = useLocalSearchParams<{ courseId: string; moduleId: string }>();
+  const courseId = Number(params.courseId);
   const moduleId = Number(params.moduleId);
   const theme = useAppTheme();
   const moduleQuery = useModuleDetailQuery(moduleId);
   const resourcesQuery = useModuleResourcesQuery(moduleId);
 
   return (
-    <AppScreen
+    <CourseShell
+      courseId={courseId}
+      activeSection="modules"
       title={moduleQuery.data?.title ?? "Detalle de módulo"}
-      subtitle="Recursos de aprendizaje"
       refreshing={moduleQuery.isFetching || resourcesQuery.isFetching}
       onRefresh={() => Promise.all([moduleQuery.refetch(), resourcesQuery.refetch()])}
     >
@@ -33,34 +44,63 @@ export default function ModuleDetailScreen() {
         <>
           {!!moduleQuery.data?.description && (
             <ClayCard>
-              <Text style={{ color: theme.colors.textMuted }}>{moduleQuery.data.description}</Text>
+              <Text style={[styles.description, { color: theme.colors.textMuted }]}>{moduleQuery.data.description}</Text>
             </ClayCard>
           )}
-          {!resourcesQuery.data?.length && <EmptyState title="Sin recursos en este módulo" />}
+          {!resourcesQuery.data?.length && <EmptyState title="Sin recursos" />}
           {resourcesQuery.data?.map((resource) => (
             <ClayCard key={resource.id} style={styles.card}>
-              <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{resource.title}</Text>
-              {!!resource.description && <Text style={[styles.description, { color: theme.colors.textMuted }]}>{resource.description}</Text>}
-              <Text style={[styles.meta, { color: theme.colors.primary }]}>Tipo: {resource.resourceType}</Text>
+              <View style={styles.head}>
+                <View style={[styles.iconBubble, { backgroundColor: theme.colors.primarySoft }]}>
+                  <Ionicons name={resourceIcon(resource.resourceType)} size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.headCopy}>
+                  <Text style={[styles.meta, { color: theme.colors.primary }]}>{resource.resourceType}</Text>
+                  <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{resource.title}</Text>
+                </View>
+              </View>
+              {!!resource.description && (
+                <Text numberOfLines={2} style={[styles.description, { color: theme.colors.textMuted }]}>
+                  {resource.description}
+                </Text>
+              )}
               {!!resource.contentText && (
                 <View style={[styles.textReader, { borderColor: theme.colors.border, backgroundColor: theme.colors.cardSoft }]}>
-                  <Text style={{ color: theme.colors.text }}>{resource.contentText}</Text>
+                  <Text numberOfLines={6} style={{ color: theme.colors.text }}>
+                    {resource.contentText}
+                  </Text>
                 </View>
               )}
               {!!resource.contentUrl && (
-                <AppButton label="Abrir recurso externo" onPress={() => Linking.openURL(resource.contentUrl!)} variant="ghost" />
+                <AppButton label="Abrir" icon="open-outline" onPress={() => Linking.openURL(resource.contentUrl!)} variant="ghost" />
               )}
             </ClayCard>
           ))}
         </>
       )}
-    </AppScreen>
+    </CourseShell>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     gap: 8,
+  },
+  head: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+  iconBubble: {
+    width: 42,
+    height: 42,
+    borderRadius: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headCopy: {
+    flex: 1,
+    gap: 2,
   },
   title: {
     fontSize: 16,
@@ -72,6 +112,8 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 12,
     fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
   textReader: {
     borderWidth: 1,

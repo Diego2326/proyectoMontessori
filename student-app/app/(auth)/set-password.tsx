@@ -47,7 +47,7 @@ export default function SetPasswordScreen() {
   });
 
   return (
-    <AppScreen title="Configurar contraseña" subtitle="Solo lo necesitas una vez." scroll={false}>
+    <AppScreen title="Configurar contraseña" scroll={false} compactHeader showAppLabel={false}>
       <View style={styles.form}>
         <Controller
           control={control}

@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
-import { AppScreen } from "@/components/AppScreen";
+import { CourseShell } from "@/components/CourseShell";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { ClayCard } from "@/components/ClayCard";
@@ -17,9 +17,11 @@ export default function CourseProgressDetailScreen() {
   const courseQuery = useCourseDetailQuery(courseId);
 
   return (
-    <AppScreen
-      title="Progreso por curso"
-      subtitle={courseQuery.data?.name ?? "Detalle de avance"}
+    <CourseShell
+      courseId={courseId}
+      activeSection="progress"
+      title="Progreso"
+      subtitle={courseQuery.data?.name}
       refreshing={progressQuery.isFetching}
       onRefresh={progressQuery.refetch}
     >
@@ -42,7 +44,7 @@ export default function CourseProgressDetailScreen() {
           </Text>
         </ClayCard>
       )}
-    </AppScreen>
+    </CourseShell>
   );
 }
 

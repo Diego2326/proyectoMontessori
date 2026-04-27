@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { assignmentStatusLabel } from "@/core/utils/status";
 import { formatDateTime } from "@/core/utils/date";
-import { AppScreen } from "@/components/AppScreen";
+import { CourseShell } from "@/components/CourseShell";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
@@ -35,11 +35,17 @@ function AssignmentRow({ assignment, courseId }: { assignment: LmsAssignmentDto;
           <Text style={[styles.title, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{assignment.title}</Text>
           <StatusPill label={statusLabel} tone={tone} />
         </View>
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>Entrega: {formatDateTime(assignment.dueAt)}</Text>
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>Puntaje máximo: {assignment.maxPoints}</Text>
-        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-          Tardías: {assignment.allowLateSubmissions ? "Sí" : "No"}
-        </Text>
+        <Text style={[styles.meta, { color: theme.colors.textMuted }]}>Entrega {formatDateTime(assignment.dueAt)}</Text>
+        <View style={styles.tags}>
+          <View style={[styles.tag, { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.border }]}>
+            <Text style={[styles.tagText, { color: theme.colors.textMuted }]}>{assignment.maxPoints} pts</Text>
+          </View>
+          <View style={[styles.tag, { backgroundColor: theme.colors.cardSoft, borderColor: theme.colors.border }]}>
+            <Text style={[styles.tagText, { color: theme.colors.textMuted }]}>
+              {assignment.allowLateSubmissions ? "Acepta tardías" : "Sin tardías"}
+            </Text>
+          </View>
+        </View>
       </ClayCard>
     </TouchableOpacity>
   );
@@ -49,16 +55,25 @@ export default function AssignmentListScreen() {
   const params = useLocalSearchParams<{ courseId: string }>();
   const courseId = Number(params.courseId);
   const { data, isLoading, isFetching, error, refetch } = useCourseAssignmentsQuery(courseId);
+  const sortedAssignments = useMemo(
+    () =>
+      [...(data ?? [])].sort((left, right) => {
+        if (!left.dueAt) return 1;
+        if (!right.dueAt) return -1;
+        return new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime();
+      }),
+    [data],
+  );
 
   return (
-    <AppScreen title="Tareas del curso" subtitle="Estado de entrega y fechas clave." refreshing={isFetching} onRefresh={refetch}>
+    <CourseShell courseId={courseId} activeSection="assignments" title="Tareas" refreshing={isFetching} onRefresh={refetch}>
       {isLoading && <LoadingState />}
       {error && <ErrorState error={error} onRetry={refetch} />}
-      {!isLoading && !error && data?.length === 0 && <EmptyState title="Sin tareas publicadas" />}
-      {data?.map((assignment) => (
+      {!isLoading && !error && sortedAssignments.length === 0 && <EmptyState title="Sin tareas" />}
+      {sortedAssignments.map((assignment) => (
         <AssignmentRow key={assignment.id} assignment={assignment} courseId={courseId} />
       ))}
-    </AppScreen>
+    </CourseShell>
   );
 }
 
@@ -77,5 +92,20 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 13,
+  },
+  tags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  tag: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
 });

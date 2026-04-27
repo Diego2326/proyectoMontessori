@@ -14,21 +14,18 @@ export default function GradesScreen() {
   const { data, isLoading, isFetching, error, refetch } = useStudentGradesQuery();
 
   return (
-    <AppScreen title="Calificaciones" subtitle="Notas y retroalimentación recibidas." refreshing={isFetching} onRefresh={refetch}>
+    <AppScreen title="Notas" refreshing={isFetching} onRefresh={refetch} compactHeader showAppLabel={false}>
       {isLoading && <LoadingState />}
       {error && <ErrorState error={error} onRetry={refetch} />}
-      {!isLoading && !error && data?.length === 0 && <EmptyState title="Sin calificaciones aún" />}
+      {!isLoading && !error && data?.length === 0 && <EmptyState title="Sin notas" />}
       {data?.map((grade) => (
         <ClayCard key={grade.id} style={styles.card}>
           <Text style={[styles.score, { color: theme.colors.primary, fontFamily: theme.typography.title }]}>{grade.score}</Text>
           <Text style={[styles.text, { color: theme.colors.textMuted }]}>Tarea #{grade.assignmentId}</Text>
-          <Text style={[styles.text, { color: theme.colors.textMuted }]}>Calificada: {formatDateTime(grade.gradedAt)}</Text>
+          <Text style={[styles.text, { color: theme.colors.textMuted }]}>{formatDateTime(grade.gradedAt)}</Text>
           {!!grade.feedback && <Text style={[styles.feedback, { color: theme.colors.text }]}>{grade.feedback}</Text>}
         </ClayCard>
       ))}
-      <Text style={[styles.note, { color: theme.colors.textMuted }]}>
-        El backend actual entrega notas por alumno; el desglose por curso depende de relacionar tareas disponibles por curso.
-      </Text>
     </AppScreen>
   );
 }
@@ -48,9 +45,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
-  },
-  note: {
-    fontSize: 12,
-    marginTop: 8,
   },
 });

@@ -46,7 +46,7 @@ export default function PrecheckScreen() {
   });
 
   return (
-    <AppScreen title="Precheck" subtitle="Validemos tu correo antes de continuar." scroll={false}>
+    <AppScreen title="Recuperar acceso" scroll={false} compactHeader showAppLabel={false}>
       <View style={styles.form}>
         <Controller
           control={control}

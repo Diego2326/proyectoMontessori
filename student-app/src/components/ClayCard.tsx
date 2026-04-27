@@ -1,6 +1,7 @@
 import React, { PropsWithChildren } from "react";
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { useResponsive } from "@/theme/useResponsive";
 
 interface ClayCardProps extends PropsWithChildren {
   style?: StyleProp<ViewStyle>;
@@ -8,6 +9,7 @@ interface ClayCardProps extends PropsWithChildren {
 
 export function ClayCard({ children, style }: ClayCardProps) {
   const theme = useAppTheme();
+  const responsive = useResponsive();
 
   return (
     <View
@@ -15,8 +17,13 @@ export function ClayCard({ children, style }: ClayCardProps) {
         styles.card,
         {
           backgroundColor: theme.colors.card,
-          borderColor: theme.colors.border,
+          borderColor: theme.colors.borderStrong,
           shadowColor: theme.colors.shadow,
+          borderTopLeftRadius: responsive.isTablet ? 30 : 24,
+          borderTopRightRadius: responsive.isTablet ? 30 : 24,
+          borderBottomLeftRadius: responsive.isTablet ? 24 : 18,
+          borderBottomRightRadius: responsive.isTablet ? 36 : 28,
+          padding: responsive.isTablet ? 20 : 14,
         },
         style,
       ]}
@@ -29,11 +36,10 @@ export function ClayCard({ children, style }: ClayCardProps) {
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: 22,
     padding: 14,
-    shadowOffset: { width: -3, height: -3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.12,
+    shadowRadius: 26,
+    elevation: 5,
   },
 });

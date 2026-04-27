@@ -18,9 +18,10 @@ export default function ProgressScreen() {
   return (
     <AppScreen
       title="Mi progreso"
-      subtitle="Avance general y por curso."
       refreshing={progressQuery.isFetching || coursesQuery.isFetching}
       onRefresh={() => Promise.all([progressQuery.refetch(), coursesQuery.refetch()])}
+      compactHeader
+      showAppLabel={false}
     >
       {(progressQuery.isLoading || coursesQuery.isLoading) && <LoadingState />}
       {(progressQuery.error || coursesQuery.error) && <ErrorState error={progressQuery.error ?? coursesQuery.error} />}
@@ -42,7 +43,7 @@ export default function ProgressScreen() {
       )}
 
       {!coursesQuery.isLoading && !coursesQuery.error && coursesQuery.data?.length === 0 && (
-        <EmptyState title="No hay cursos para mostrar progreso" />
+        <EmptyState title="Sin materias" />
       )}
       {coursesQuery.data?.map((course) => (
         <TouchableOpacity key={course.id} onPress={() => router.push(`/(app)/courses/${course.id}/progress`)}>

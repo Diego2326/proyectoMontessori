@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getErrorMessage } from "@/core/api/error";
 import { AppScreen } from "@/components/AppScreen";
+import { CourseShell } from "@/components/CourseShell";
 import { FormField } from "@/components/FormField";
 import { AppButton } from "@/components/AppButton";
 import { LoadingState } from "@/components/LoadingState";
@@ -49,10 +50,11 @@ export default function SubmissionEditorScreen() {
 
   const editable = canEditSubmission(assignmentQuery.data);
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isCourseContext = Number.isFinite(courseId);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!editable) {
-      Alert.alert("No editable", "La tarea está cerrada y no admite tardías.");
+      Alert.alert("No disponible", "La tarea ya cerró.");
       return;
     }
     try {
@@ -66,7 +68,7 @@ export default function SubmissionEditorScreen() {
       } else {
         await createMutation.mutateAsync(payload);
       }
-      Alert.alert("Éxito", "Entrega guardada correctamente.");
+      Alert.alert("Listo", "Entrega guardada.");
       router.back();
     } catch (error) {
       Alert.alert("No se pudo guardar", getErrorMessage(error));
@@ -75,14 +77,14 @@ export default function SubmissionEditorScreen() {
 
   if (!Number.isFinite(courseId)) {
     return (
-      <AppScreen title="Editor de entrega">
+      <AppScreen title="Editor de entrega" compactHeader showAppLabel={false}>
         <ErrorState error={new Error("No se recibió el curso de la tarea.")} />
       </AppScreen>
     );
   }
 
-  return (
-    <AppScreen title="Editor de entrega" subtitle="Envía texto y/o URL adjunta.">
+  const screenContent = (
+    <>
       {(assignmentQuery.isLoading || mySubmissionQuery.isLoading) && <LoadingState />}
       {(assignmentQuery.error || mySubmissionQuery.error) && <ErrorState error={assignmentQuery.error ?? mySubmissionQuery.error} />}
 
@@ -94,7 +96,7 @@ export default function SubmissionEditorScreen() {
 
           {!editable && (
             <Text style={{ color: theme.colors.warning, fontSize: 13 }}>
-              Esta tarea está cerrada; no se permiten cambios.
+              Esta tarea ya cerró.
             </Text>
           )}
 
@@ -137,6 +139,20 @@ export default function SubmissionEditorScreen() {
           />
         </View>
       )}
+    </>
+  );
+
+  if (isCourseContext) {
+    return (
+      <CourseShell courseId={courseId} activeSection="assignments" title="Entrega">
+        {screenContent}
+      </CourseShell>
+    );
+  }
+
+  return (
+    <AppScreen title="Entrega" compactHeader showAppLabel={false}>
+      {screenContent}
     </AppScreen>
   );
 }

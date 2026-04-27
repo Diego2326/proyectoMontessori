@@ -52,6 +52,7 @@ export default function AppLayout() {
       <Stack.Screen name="assignments/[assignmentId]/submission" />
       <Stack.Screen name="grades" />
       <Stack.Screen name="courses/[courseId]/feed" />
+      <Stack.Screen name="courses/[courseId]/calendar" />
       <Stack.Screen name="feed/[postId]/comments" />
       <Stack.Screen name="progress" />
       <Stack.Screen name="courses/[courseId]/progress" />

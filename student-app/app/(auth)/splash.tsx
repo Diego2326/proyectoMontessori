@@ -4,10 +4,14 @@ import { router } from "expo-router";
 import { useAuthStore } from "@/core/auth/authStore";
 import { AppScreen } from "@/components/AppScreen";
 import { LoadingState } from "@/components/LoadingState";
+import { ClayCard } from "@/components/ClayCard";
+import { StudentLogo } from "@/components/StudentLogo";
 import { useAppTheme } from "@/theme/ThemeProvider";
+import { useResponsive } from "@/theme/useResponsive";
 
 export default function SplashScreen() {
   const theme = useAppTheme();
+  const responsive = useResponsive();
   const token = useAuthStore((s) => s.token);
   const isRestoring = useAuthStore((s) => s.isRestoring);
 
@@ -21,29 +25,45 @@ export default function SplashScreen() {
   }, [token, isRestoring]);
 
   return (
-    <AppScreen title="Montessori LMS" subtitle="Preparando tu experiencia..." scroll={false}>
-      <View style={[styles.logo, { borderColor: theme.colors.primarySoft, backgroundColor: theme.colors.cardSoft }]}>
-        <Text style={{ color: theme.colors.primary, fontFamily: theme.typography.title }}>M</Text>
+    <AppScreen title="Bienvenido" scroll={false} compactHeader showAppLabel={false}>
+      <View style={[styles.layout, { flexDirection: responsive.isTablet ? "row" : "column", gap: responsive.isTablet ? 20 : 14 }]}>
+        <ClayCard style={[styles.brandCard, { flex: responsive.isTablet ? 1.2 : undefined }]}>
+          <StudentLogo size={responsive.isTablet ? 188 : 144} />
+          <Text style={[styles.brandTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Montessori Student</Text>
+        </ClayCard>
+
+        <ClayCard style={[styles.statusCard, { width: responsive.isTablet ? responsive.formMaxWidth : undefined }]}>
+          <Text style={[styles.statusTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Inicializando</Text>
+          <Text style={[styles.statusText, { color: theme.colors.textMuted }]}>Preparando tu inicio.</Text>
+          <LoadingState label="Cargando sesión..." />
+        </ClayCard>
       </View>
-      <Text style={[styles.caption, { color: theme.colors.textMuted }]}>Campus estudiantil móvil</Text>
-      <LoadingState label="Cargando sesión..." />
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignSelf: "center",
-    marginTop: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  layout: {
+    flex: 1,
   },
-  caption: {
-    textAlign: "center",
+  brandCard: {
+    justifyContent: "center",
+    gap: 16,
+  },
+  brandTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  statusCard: {
+    gap: 14,
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  statusTitle: {
+    fontSize: 24,
+  },
+  statusText: {
     fontSize: 14,
+    lineHeight: 21,
   },
 });
