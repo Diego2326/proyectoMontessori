@@ -1,9 +1,9 @@
-import React, { PropsWithChildren } from "react";
+import React, { PropsWithChildren, useRef } from "react";
 import {
+  Animated,
   Pressable,
   RefreshControl,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -16,6 +16,7 @@ import { useAppTheme } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
 import { getReadableAccentColor } from "@/theme/colorUtils";
 import { OfflineBanner } from "./OfflineBanner";
+import { AmbientBackdrop } from "./AmbientBackdrop";
 
 interface AppScreenProps extends PropsWithChildren {
   title: string;
@@ -42,6 +43,7 @@ export function AppScreen({
   const theme = useAppTheme();
   const responsive = useResponsive();
   const navigation = useNavigation();
+  const scrollY = useRef(new Animated.Value(0)).current;
   const canGoBack = showBackButton && navigation.canGoBack();
   const appIconColor = getReadableAccentColor(theme.colors.primary, theme.colors.surfaceStrong, theme.colors.text);
   const content = (
@@ -128,11 +130,9 @@ export function AppScreen({
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={[styles.glowA, { backgroundColor: theme.colors.glowA }]} />
-      <View style={[styles.glowB, { backgroundColor: theme.colors.glowB }]} />
-      <View style={[styles.glowC, { backgroundColor: theme.colors.glowC }]} />
+      <AmbientBackdrop scrollY={scrollY} />
       {scroll ? (
-        <ScrollView
+        <Animated.ScrollView
           contentContainerStyle={[
             styles.container,
             {
@@ -141,10 +141,14 @@ export function AppScreen({
             },
           ]}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })}
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined}
         >
           {content}
-        </ScrollView>
+        </Animated.ScrollView>
       ) : (
         <View
           style={[
@@ -221,32 +225,5 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  glowA: {
-    position: "absolute",
-    width: 240,
-    height: 240,
-    borderRadius: 240,
-    top: 78,
-    right: -40,
-    opacity: 0.6,
-  },
-  glowB: {
-    position: "absolute",
-    width: 260,
-    height: 260,
-    borderRadius: 260,
-    left: -80,
-    bottom: 70,
-    opacity: 0.42,
-  },
-  glowC: {
-    position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 180,
-    top: 220,
-    left: "35%",
-    opacity: 0.55,
   },
 });

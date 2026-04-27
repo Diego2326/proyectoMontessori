@@ -12,6 +12,7 @@ import { StudentLogo } from "@/components/StudentLogo";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
 import { useHomeFeedQuery } from "@/features/home/hooks";
+import { HomeActivityDto } from "@/types/dto";
 
 const stories = [
   { id: "story-1", label: "Mate", icon: "calculator", tone: "sky" },
@@ -20,13 +21,65 @@ const stories = [
   { id: "story-4", label: "Mañana", icon: "sunny", tone: "sun" },
 ] as const;
 
+interface MasonryEntry {
+  item: HomeActivityDto;
+  height: number;
+}
+
+function isSameCalendarDay(left: string, right: Date) {
+  const value = new Date(left);
+
+  return (
+    value.getFullYear() === right.getFullYear() &&
+    value.getMonth() === right.getMonth() &&
+    value.getDate() === right.getDate()
+  );
+}
+
+function estimateCardHeight(item: HomeActivityDto, index: number, isTablet: boolean) {
+  const pattern = isTablet ? [318, 272, 296, 258] : [278, 232, 256, 218];
+  const imageBonus = item.attachments?.some((attachment) => attachment.type === "image") ? 18 : -10;
+  const bodyBonus = item.body.length > 80 ? 16 : item.body.length > 48 ? 8 : 0;
+  const courseBonus = item.courseName ? 0 : -6;
+
+  return pattern[index % pattern.length] + imageBonus + bodyBonus + courseBonus;
+}
+
+function buildMasonryColumns(items: HomeActivityDto[], isTablet: boolean) {
+  const left: MasonryEntry[] = [];
+  const right: MasonryEntry[] = [];
+  let leftHeight = 0;
+  let rightHeight = 0;
+
+  items.forEach((item, index) => {
+    const height = estimateCardHeight(item, index, isTablet);
+    const entry = { item, height };
+
+    if (leftHeight <= rightHeight) {
+      left.push(entry);
+      leftHeight += height + 16;
+    } else {
+      right.push(entry);
+      rightHeight += height + 16;
+    }
+  });
+
+  return [left, right] as const;
+}
+
 export default function StudentDashboardScreen() {
   const theme = useAppTheme();
   const responsive = useResponsive();
   const { data, isLoading, isFetching, error, refetch } = useHomeFeedQuery();
-
-  const topItems = data?.slice(0, 2) ?? [];
-  const feedItems = data?.slice(2) ?? [];
+  const today = React.useMemo(() => new Date(), []);
+  const columns = React.useMemo(() => buildMasonryColumns(data ?? [], responsive.isTablet), [data, responsive.isTablet]);
+  const featuredItems = React.useMemo(
+    () =>
+      (data ?? [])
+        .filter((item) => item.type === "announcement" || (item.type === "event" && isSameCalendarDay(item.createdAt, today)))
+        .slice(0, 8),
+    [data, today],
+  );
 
   return (
     <AppScreen
@@ -82,13 +135,30 @@ export default function StudentDashboardScreen() {
       {error && <ErrorState error={error} onRetry={refetch} />}
       {!isLoading && !error && data?.length === 0 && <EmptyState title="Sin actividad" />}
 
-      {!!topItems.length && (
-        <View style={[styles.highlightGrid, { flexDirection: responsive.isTablet ? "row" : "column" }]}>
-          {topItems.map((item) => (
-            <View key={item.id} style={[styles.highlightCell, responsive.isTablet && { width: topItems.length > 1 ? "49%" : "100%" }]}>
-              <ActivityFeedCard item={item} onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined} />
-            </View>
-          ))}
+      {!!featuredItems.length && (
+        <View style={styles.featuredSection}>
+          <View style={styles.feedHeader}>
+            <Text style={[styles.feedTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Destacados</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRail}>
+            {featuredItems.map((item, index) => (
+              <View
+                key={item.id}
+                style={[
+                  styles.featuredCardWrap,
+                  {
+                    width: responsive.isTablet ? 344 : 286,
+                  },
+                ]}
+              >
+                <ActivityFeedCard
+                  item={item}
+                  height={responsive.isTablet ? (index % 2 === 0 ? 266 : 244) : 228}
+                  onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
+                />
+              </View>
+            ))}
+          </ScrollView>
         </View>
       )}
 
@@ -96,9 +166,18 @@ export default function StudentDashboardScreen() {
         <Text style={[styles.feedTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Actividad reciente</Text>
       </View>
 
-      <View style={styles.feedList}>
-        {feedItems.map((item) => (
-          <ActivityFeedCard key={item.id} item={item} onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined} />
+      <View style={styles.masonryRow}>
+        {columns.map((column, columnIndex) => (
+          <View key={`column-${columnIndex}`} style={styles.masonryColumn}>
+            {column.map(({ item, height }) => (
+              <ActivityFeedCard
+                key={item.id}
+                item={item}
+                height={height}
+                onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
+              />
+            ))}
+          </View>
         ))}
       </View>
     </AppScreen>
@@ -120,13 +199,6 @@ const styles = StyleSheet.create({
   introTitle: {
     fontSize: 17,
     lineHeight: 22,
-  },
-  highlightGrid: {
-    gap: 12,
-    justifyContent: "space-between",
-  },
-  highlightCell: {
-    width: "100%",
   },
   feedHeader: {
     flexDirection: "row",
@@ -176,7 +248,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  feedList: {
+  featuredSection: {
     gap: 10,
+  },
+  featuredRail: {
+    gap: 12,
+    paddingRight: 8,
+  },
+  featuredCardWrap: {
+    flexShrink: 0,
+  },
+  masonryRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  masonryColumn: {
+    flex: 1,
+    gap: 16,
   },
 });

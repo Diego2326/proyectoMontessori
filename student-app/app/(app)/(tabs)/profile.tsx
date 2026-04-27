@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { formatDateTime } from "@/core/utils/date";
 import { useAppTheme, useThemeController } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
 import { assessThemeColorContrast, getReadableTextColor } from "@/theme/colorUtils";
+import { getBackgroundDecorPreviewShapes } from "@/theme/backgroundDecor";
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
@@ -19,10 +20,13 @@ export default function ProfileScreen() {
     paletteId,
     preferredMode,
     palettes,
+    backgroundDecorId,
+    backgroundDecors,
     colorSwatches,
     primaryColor,
     accentColor,
     setPalette,
+    setBackgroundDecor,
     setPreferredMode,
     setPrimaryColor,
     setAccentColor,
@@ -94,6 +98,74 @@ export default function ProfileScreen() {
               </View>
               <Ionicons name="chevron-down" size={18} color={theme.colors.primary} />
             </Pressable>
+
+            <View style={styles.inlineBackgroundSection}>
+              <View style={styles.sectionHead}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Fondo</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.backgroundRail}>
+                {backgroundDecors.map((decor) => {
+                  const active = backgroundDecorId === decor.meta.id;
+                  const previewShapes = getBackgroundDecorPreviewShapes(theme, decor.meta.id);
+                  return (
+                    <Pressable
+                      key={decor.meta.id}
+                      onPress={() => void setBackgroundDecor(decor.meta.id)}
+                      style={[
+                        styles.backgroundInlineCard,
+                        {
+                          backgroundColor: active ? theme.colors.card : theme.colors.cardSoft,
+                          borderColor: active ? theme.colors.primary : theme.colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={[styles.backgroundPreview, { backgroundColor: theme.colors.bgSecondary }]}>
+                        {previewShapes.map((shape, index) => (
+                          <View
+                            key={`${decor.meta.id}-${index}`}
+                            style={[
+                              shape.kind === "circle"
+                                ? styles.previewCircle
+                                : shape.kind === "capsule"
+                                  ? styles.previewCapsule
+                                  : shape.kind === "rounded"
+                                    ? styles.previewRounded
+                                    : shape.kind === "ring"
+                                      ? styles.previewRing
+                                      : shape.kind === "diamond"
+                                        ? styles.previewDiamond
+                                        : styles.previewIconWrap,
+                              {
+                                width: shape.size,
+                                height: shape.kind === "capsule" ? Math.round(shape.size * 0.52) : shape.size,
+                                top: typeof shape.top === "number" ? shape.top : undefined,
+                                left: typeof shape.left === "number" ? shape.left : undefined,
+                                borderRadius:
+                                  shape.kind === "circle" || shape.kind === "ring" || shape.kind === "capsule"
+                                    ? shape.size
+                                    : Math.round(shape.size * 0.24),
+                                backgroundColor:
+                                  shape.kind === "ring" || shape.kind === "icon" ? "transparent" : shape.color,
+                                borderColor: shape.kind === "ring" ? shape.color : "transparent",
+                                borderWidth: shape.kind === "ring" ? Math.max(4, Math.round(shape.size * 0.08)) : 0,
+                                transform: shape.rotation ? [{ rotate: `${shape.rotation}deg` }] : undefined,
+                              },
+                            ]}
+                          >
+                            {shape.kind === "icon" && shape.icon && (
+                              <Ionicons name={shape.icon} size={shape.iconSize ?? Math.round(shape.size * 0.52)} color={shape.color} />
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                      <Text style={[styles.backgroundName, { color: theme.colors.text, fontFamily: theme.typography.title }]}>
+                        {decor.meta.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
           </ClayCard>
 
           <ClayCard style={styles.sideCard}>
@@ -336,6 +408,9 @@ const styles = StyleSheet.create({
   themeModeText: {
     fontSize: 12,
   },
+  inlineBackgroundSection: {
+    gap: 10,
+  },
   modeRow: {
     flexDirection: "row",
     gap: 8,
@@ -417,6 +492,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+  },
+  backgroundRail: {
+    gap: 10,
+    paddingRight: 8,
+  },
+  backgroundInlineCard: {
+    width: 124,
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 10,
+    gap: 8,
+  },
+  backgroundPreview: {
+    height: 72,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  previewCircle: {
+    position: "absolute",
+  },
+  previewCapsule: {
+    position: "absolute",
+  },
+  previewRounded: {
+    position: "absolute",
+  },
+  previewRing: {
+    position: "absolute",
+  },
+  previewDiamond: {
+    position: "absolute",
+  },
+  previewIconWrap: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backgroundName: {
+    fontSize: 14,
   },
   colorOption: {
     width: 44,

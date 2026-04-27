@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { authedRequest } from "@/core/api/authedRequest";
 import { getOptionalStudentId } from "@/core/auth/session";
+import { getHomeArtwork } from "@/features/home/homeArtwork";
 import {
   AcademicModuleDto,
   CalendarEventDto,
@@ -41,12 +42,19 @@ function buildNotificationActivity(item: NotificationDto): HomeActivityDto {
   };
 }
 
-function buildImageAttachment(id: string, title: string, previewTone: HomeActivityAttachmentDto["previewTone"]): HomeActivityAttachmentDto {
+function buildImageAttachment(
+  id: string,
+  title: string,
+  previewTone: HomeActivityAttachmentDto["previewTone"],
+  imageUrl: string,
+  subtitle?: string
+): HomeActivityAttachmentDto {
   return {
     id,
     type: "image",
     title,
-    subtitle: "Vista previa",
+    subtitle,
+    imageUrl,
     previewTone,
   };
 }
@@ -125,6 +133,14 @@ export function useHomeFeedQuery() {
 
       calendar.forEach((event) => {
         const course = courses.find((item) => item.id === event.courseId);
+        const artwork = getHomeArtwork({
+          id: `event-${event.id}-poster`,
+          title: event.title,
+          body: event.description,
+          kind: "event",
+          course,
+        });
+
         activities.push({
           id: `event-${event.id}`,
           type: "event",
@@ -139,12 +155,20 @@ export function useHomeFeedQuery() {
           actionHref: "/(app)/(tabs)/calendar",
           likes: 8,
           comments: 0,
-          attachments: [buildImageAttachment(`event-${event.id}-poster`, "Afiche de la actividad", "sun")],
+          attachments: [buildImageAttachment(`event-${event.id}-poster`, artwork.title, "sun", artwork.imageUrl, artwork.subtitle)],
         });
       });
 
       byCourse.forEach(({ course, feed, assignments, resourcesPerModule }) => {
         feed.forEach((post) => {
+          const artwork = getHomeArtwork({
+            id: `feed-${post.id}-cover`,
+            title: post.title ?? `Nueva publicación en ${course.name}`,
+            body: post.content,
+            kind: "feed",
+            course,
+          });
+
           activities.push({
             id: `feed-${post.id}`,
             type: "announcement",
@@ -159,7 +183,7 @@ export function useHomeFeedQuery() {
             actionHref: `/(app)/courses/${course.id}`,
             likes: 14,
             comments: 4,
-            attachments: [buildImageAttachment(`feed-${post.id}-cover`, `Foto para ${course.name}`, "sky")],
+            attachments: [buildImageAttachment(`feed-${post.id}-cover`, artwork.title, "sky", artwork.imageUrl, artwork.subtitle)],
           });
         });
 
@@ -187,6 +211,15 @@ export function useHomeFeedQuery() {
 
         resourcesPerModule.forEach(({ module, resources }) => {
           resources.forEach((resource) => {
+            const artwork = getHomeArtwork({
+              id: `resource-${resource.id}-preview`,
+              title: resource.title,
+              body: resource.description,
+              kind: "resource",
+              course,
+              moduleName: module.title,
+            });
+
             activities.push({
               id: `resource-${resource.id}`,
               type: "material",
@@ -203,7 +236,7 @@ export function useHomeFeedQuery() {
               likes: 7,
               comments: 1,
               attachments: [
-                buildImageAttachment(`resource-${resource.id}-preview`, "Portada del material", "mint"),
+                buildImageAttachment(`resource-${resource.id}-preview`, artwork.title, "mint", artwork.imageUrl, artwork.subtitle),
                 buildDocumentAttachment(
                   `resource-${resource.id}-file`,
                   resource.title,

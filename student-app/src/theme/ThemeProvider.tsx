@@ -14,17 +14,27 @@ import {
   themePalettes,
 } from "./tokens";
 import { normalizeHexColor } from "./colorUtils";
+import {
+  BackgroundDecorId,
+  backgroundDecorPresets,
+  defaultBackgroundDecorId,
+  getBackgroundDecorMeta,
+  isBackgroundDecorId,
+} from "./backgroundDecor";
 
 interface ThemeContextValue {
   theme: AppTheme;
   colorScheme: ThemeMode;
   paletteId: ThemePaletteId;
+  backgroundDecorId: BackgroundDecorId;
   preferredMode: ThemePreferenceMode;
   palettes: typeof themePalettes;
+  backgroundDecors: typeof backgroundDecorPresets;
   colorSwatches: typeof themeColorSwatches;
   primaryColor: string | null;
   accentColor: string | null;
   setPalette: (paletteId: ThemePaletteId) => Promise<void>;
+  setBackgroundDecor: (decorId: BackgroundDecorId) => Promise<void>;
   setPreferredMode: (mode: ThemePreferenceMode) => Promise<void>;
   setPrimaryColor: (color: string | null) => Promise<void>;
   setAccentColor: (color: string | null) => Promise<void>;
@@ -37,12 +47,15 @@ const ThemeContext = createContext<ThemeContextValue>({
   theme: resolveTheme(defaultThemePaletteId, "light"),
   colorScheme: "light",
   paletteId: defaultThemePaletteId,
+  backgroundDecorId: defaultBackgroundDecorId,
   preferredMode: "system",
   palettes: themePalettes,
+  backgroundDecors: backgroundDecorPresets,
   colorSwatches: themeColorSwatches,
   primaryColor: null,
   accentColor: null,
   setPalette: async () => undefined,
+  setBackgroundDecor: async () => undefined,
   setPreferredMode: async () => undefined,
   setPrimaryColor: async () => undefined,
   setAccentColor: async () => undefined,
@@ -51,6 +64,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 interface StoredThemePreferences {
   paletteId: ThemePaletteId;
+  backgroundDecorId: BackgroundDecorId;
   preferredMode: ThemePreferenceMode;
   primaryColor?: string | null;
   accentColor?: string | null;
@@ -67,6 +81,7 @@ function isPreferenceMode(value: unknown): value is ThemePreferenceMode {
 export function ThemeProvider({ children }: PropsWithChildren) {
   const systemColorScheme = useColorScheme();
   const [paletteId, setPaletteId] = useState<ThemePaletteId>(defaultThemePaletteId);
+  const [backgroundDecorId, setBackgroundDecorId] = useState<BackgroundDecorId>(defaultBackgroundDecorId);
   const [preferredMode, setPreferredModeState] = useState<ThemePreferenceMode>("system");
   const [primaryColor, setPrimaryColorState] = useState<string | null>(null);
   const [accentColor, setAccentColorState] = useState<string | null>(null);
@@ -78,6 +93,9 @@ export function ThemeProvider({ children }: PropsWithChildren) {
         const parsed = JSON.parse(raw) as Partial<StoredThemePreferences>;
         if (isPaletteId(parsed.paletteId)) {
           setPaletteId(parsed.paletteId);
+        }
+        if (isBackgroundDecorId(parsed.backgroundDecorId)) {
+          setBackgroundDecorId(parsed.backgroundDecorId);
         }
         if (isPreferenceMode(parsed.preferredMode)) {
           setPreferredModeState(parsed.preferredMode);
@@ -98,6 +116,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   const persistCurrent = async (next: Partial<StoredThemePreferences>) => {
     await persist({
       paletteId: "paletteId" in next ? (next.paletteId as ThemePaletteId) : paletteId,
+      backgroundDecorId: "backgroundDecorId" in next ? (next.backgroundDecorId as BackgroundDecorId) : backgroundDecorId,
       preferredMode: "preferredMode" in next ? (next.preferredMode as ThemePreferenceMode) : preferredMode,
       primaryColor: "primaryColor" in next ? (next.primaryColor ?? null) : primaryColor,
       accentColor: "accentColor" in next ? (next.accentColor ?? null) : accentColor,
@@ -107,6 +126,12 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   const setPalette = async (nextPaletteId: ThemePaletteId) => {
     setPaletteId(nextPaletteId);
     await persistCurrent({ paletteId: nextPaletteId });
+  };
+
+  const setBackgroundDecor = async (nextDecorId: BackgroundDecorId) => {
+    const safeDecor = getBackgroundDecorMeta(nextDecorId).id;
+    setBackgroundDecorId(safeDecor);
+    await persistCurrent({ backgroundDecorId: safeDecor });
   };
 
   const setPreferredMode = async (nextMode: ThemePreferenceMode) => {
@@ -134,6 +159,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<ThemeContextValue>(() => {
     const safePalette = getThemePaletteMeta(paletteId).id;
+    const safeBackgroundDecor = getBackgroundDecorMeta(backgroundDecorId).id;
     const overrides: ThemeColorOverrides = {
       primaryColor,
       accentColor,
@@ -142,18 +168,21 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       theme: resolveTheme(safePalette, colorScheme, overrides),
       colorScheme,
       paletteId: safePalette,
+      backgroundDecorId: safeBackgroundDecor,
       preferredMode,
       palettes: themePalettes,
+      backgroundDecors: backgroundDecorPresets,
       colorSwatches: themeColorSwatches,
       primaryColor,
       accentColor,
       setPalette,
+      setBackgroundDecor,
       setPreferredMode,
       setPrimaryColor,
       setAccentColor,
       resetColorOverrides,
     };
-  }, [accentColor, colorScheme, paletteId, preferredMode, primaryColor]);
+  }, [accentColor, backgroundDecorId, colorScheme, paletteId, preferredMode, primaryColor]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -165,12 +194,15 @@ export function useAppTheme() {
 export function useThemeController() {
   const {
     paletteId,
+    backgroundDecorId,
     preferredMode,
     palettes,
+    backgroundDecors,
     colorSwatches,
     primaryColor,
     accentColor,
     setPalette,
+    setBackgroundDecor,
     setPreferredMode,
     setPrimaryColor,
     setAccentColor,
@@ -179,13 +211,16 @@ export function useThemeController() {
   } = useContext(ThemeContext);
   return {
     paletteId,
+    backgroundDecorId,
     preferredMode,
     palettes,
+    backgroundDecors,
     colorSwatches,
     primaryColor,
     accentColor,
     colorScheme,
     setPalette,
+    setBackgroundDecor,
     setPreferredMode,
     setPrimaryColor,
     setAccentColor,

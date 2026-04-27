@@ -1,12 +1,14 @@
 import React, { PropsWithChildren } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppScreen } from "@/components/AppScreen";
 import { ClayCard } from "@/components/ClayCard";
 import { StudentLogo } from "@/components/StudentLogo";
 import { StatusPill } from "@/components/StatusPill";
 import { useCourseDetailQuery } from "@/features/courses/hooks";
+import { getCourseArtwork } from "@/features/courses/courseArtwork";
 import { useCourseStudentProgressQuery } from "@/features/progress/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
@@ -52,6 +54,7 @@ export function CourseShell({
   const progressQuery = useCourseStudentProgressQuery(courseId);
   const activeNavInk = getReadableAccentColor(theme.colors.primary, theme.colors.primarySoft, theme.colors.text);
   const activeBubbleInk = getReadableAccentColor(theme.colors.primary, theme.colors.surfaceStrong, theme.colors.text);
+  const artwork = getCourseArtwork(courseQuery.data ?? { id: courseId }, "hero");
 
   return (
     <AppScreen
@@ -80,17 +83,29 @@ export function CourseShell({
               <Text style={[styles.backToCoursesLabel, { color: theme.colors.text }]}>Todas las materias</Text>
             </Pressable>
 
-            <View style={styles.courseHero}>
-              <View style={styles.courseHeroTop}>
-                <StudentLogo size={responsive.isTablet ? 62 : 54} />
-                <StatusPill label={courseQuery.data?.status ?? "Activo"} tone="primary" />
-              </View>
-              <View style={styles.courseHeroCopy}>
-                <Text style={[styles.courseName, { color: theme.colors.text, fontFamily: theme.typography.title }]}>
-                  {courseQuery.data?.name ?? "Materia"}
-                </Text>
-                <Text style={[styles.courseCode, { color: theme.colors.primary }]}>{courseQuery.data?.code ?? "Curso"}</Text>
-              </View>
+            <View style={[styles.courseHeroFrame, { borderColor: theme.colors.borderStrong }]}>
+              <ImageBackground source={{ uri: artwork.imageUrl }} resizeMode="cover" style={styles.courseHero}>
+                <LinearGradient
+                  colors={["rgba(10, 18, 28, 0.12)", "rgba(10, 18, 28, 0.34)", "rgba(10, 18, 28, 0.82)"]}
+                  locations={[0, 0.45, 1]}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.courseHeroOverlay}
+                >
+                  <View style={styles.courseHeroTop}>
+                    <View style={styles.courseLogoBubble}>
+                      <StudentLogo size={responsive.isTablet ? 62 : 54} />
+                    </View>
+                    <StatusPill label={courseQuery.data?.status ?? "Activo"} tone="primary" />
+                  </View>
+                  <View style={styles.courseHeroCopy}>
+                    <Text style={[styles.courseName, { color: "#FFFFFF", fontFamily: theme.typography.title }]}>
+                      {courseQuery.data?.name ?? "Materia"}
+                    </Text>
+                    <Text style={[styles.courseCode, { color: "rgba(255,255,255,0.86)" }]}>{courseQuery.data?.code ?? "Curso"}</Text>
+                  </View>
+                </LinearGradient>
+              </ImageBackground>
             </View>
 
             <View style={styles.metricRow}>
@@ -167,14 +182,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
   },
+  courseHeroFrame: {
+    borderWidth: 1,
+    borderRadius: 26,
+    overflow: "hidden",
+  },
   courseHero: {
+    minHeight: 196,
+  },
+  courseHeroOverlay: {
+    flex: 1,
     gap: 10,
+    justifyContent: "space-between",
+    padding: 14,
+  },
+  courseLogoBubble: {
+    backgroundColor: "rgba(255,255,255,0.88)",
+    borderRadius: 999,
+    padding: 6,
+    alignSelf: "flex-start",
   },
   courseHeroTop: {
+    gap: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
   },
   courseHeroCopy: {
     gap: 4,

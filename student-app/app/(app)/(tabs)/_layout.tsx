@@ -1,13 +1,37 @@
 import React from "react";
+import { StyleSheet, View } from "react-native";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
+
+function TabBarGlass() {
+  const theme = useAppTheme();
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <BlurView intensity={80} tint={theme.mode === "dark" ? "dark" : "light"} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={
+          theme.mode === "dark"
+            ? ["rgba(255,255,255,0.12)", "rgba(255,255,255,0.03)"]
+            : ["rgba(255,255,255,0.7)", "rgba(255,255,255,0.24)"]
+        }
+        start={{ x: 0.12, y: 0 }}
+        end={{ x: 0.88, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const theme = useAppTheme();
   const responsive = useResponsive();
+  const itemRadius = responsive.isTablet ? 24 : 20;
+
   return (
     <Tabs
       screenOptions={{
@@ -15,13 +39,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarShowLabel: true,
-        tabBarBackground: () => (
-          <BlurView
-            intensity={85}
-            tint={theme.mode === "dark" ? "dark" : "light"}
-            style={{ flex: 1, borderRadius: responsive.isTablet ? 34 : 28, overflow: "hidden" }}
-          />
-        ),
+        tabBarBackground: () => <TabBarGlass />,
         tabBarStyle: {
           position: "absolute",
           left: responsive.isTablet ? 26 : 16,
@@ -34,8 +52,9 @@ export default function TabsLayout() {
           height: responsive.isTablet ? 88 : 72,
           paddingTop: responsive.isTablet ? 12 : 8,
           paddingBottom: responsive.isTablet ? 10 : 8,
-          paddingHorizontal: responsive.isTablet ? 28 : 12,
+          paddingHorizontal: responsive.isTablet ? 24 : 10,
           borderRadius: responsive.isTablet ? 34 : 28,
+          overflow: "hidden",
           shadowColor: theme.colors.shadow,
           shadowOffset: { width: 0, height: 12 },
           shadowOpacity: 0.12,
@@ -47,10 +66,11 @@ export default function TabsLayout() {
           fontWeight: "700",
         },
         tabBarItemStyle: {
-          borderRadius: 20,
-          marginHorizontal: responsive.isTablet ? 4 : 2,
+          borderRadius: itemRadius,
+          marginHorizontal: 3,
+          marginVertical: 3,
         },
-        tabBarActiveBackgroundColor: theme.colors.surface,
+        tabBarActiveBackgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.11)" : "rgba(255,255,255,0.58)",
       }}
     >
       <Tabs.Screen
@@ -77,7 +97,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          title: "Calendario",
+          title: "Agenda",
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />,
         }}
       />

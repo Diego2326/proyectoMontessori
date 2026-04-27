@@ -197,6 +197,7 @@ export interface HomeActivityAttachmentDto {
   type: "image" | "document";
   title: string;
   subtitle?: string;
+  imageUrl?: string;
   previewTone?: "sky" | "sun" | "mint" | "berry";
   fileLabel?: string;
 }
