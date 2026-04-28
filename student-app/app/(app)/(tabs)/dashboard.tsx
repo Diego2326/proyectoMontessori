@@ -1,184 +1,169 @@
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { AppScreen } from "@/components/AppScreen";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import { ActivityFeedCard } from "@/components/ActivityFeedCard";
 import { ClayCard } from "@/components/ClayCard";
+import { StatusPill } from "@/components/StatusPill";
 import { StudentLogo } from "@/components/StudentLogo";
+import { getCourseArtwork } from "@/features/courses/courseArtwork";
+import { useStudentCoursesQuery } from "@/features/courses/hooks";
+import { useHomeFeedQuery } from "@/features/home/hooks";
 import { useAppTheme } from "@/theme/ThemeProvider";
 import { useResponsive } from "@/theme/useResponsive";
-import { useHomeFeedQuery } from "@/features/home/hooks";
-import { HomeActivityDto } from "@/types/dto";
+import { CourseDto, HomeActivityDto } from "@/types/dto";
 
-const stories = [
-  { id: "story-1", label: "Mate", icon: "calculator", tone: "sky" },
-  { id: "story-2", label: "Lab", icon: "flask", tone: "mint" },
-  { id: "story-3", label: "Avisos", icon: "megaphone", tone: "berry" },
-  { id: "story-4", label: "Mañana", icon: "sunny", tone: "sun" },
-] as const;
+function estimateCardHeight(item: HomeActivityDto, isTablet: boolean) {
+  const baseHeight = isTablet ? 194 : 182;
+  const bodyBonus = item.body.length > 96 ? 34 : item.body.length > 64 ? 18 : 0;
+  const attachmentBonus = (item.attachments?.filter((attachment) => attachment.type === "document").length ?? 0) > 0 ? 8 : 0;
+  const actionBonus = item.actionLabel ? 8 : 0;
 
-interface MasonryEntry {
-  item: HomeActivityDto;
-  height: number;
+  return baseHeight + bodyBonus + attachmentBonus + actionBonus;
 }
 
-function isSameCalendarDay(left: string, right: Date) {
-  const value = new Date(left);
+function CourseListItem({ course }: { course: CourseDto }) {
+  const theme = useAppTheme();
+  const artwork = getCourseArtwork(course, "card");
 
   return (
-    value.getFullYear() === right.getFullYear() &&
-    value.getMonth() === right.getMonth() &&
-    value.getDate() === right.getDate()
+    <Pressable
+      onPress={() => router.push(`/(app)/courses/${course.id}`)}
+      style={({ pressed }) => [{ opacity: pressed ? 0.94 : 1 }, styles.courseItemWrap]}
+    >
+      <View style={[styles.courseCardShell, { borderColor: theme.colors.borderStrong, shadowColor: theme.colors.shadow }]}>
+        <ImageBackground source={{ uri: artwork.imageUrl }} resizeMode="cover" style={styles.courseImageFill}>
+          <LinearGradient
+            colors={["rgba(10, 18, 28, 0.14)", "rgba(10, 18, 28, 0.28)", "rgba(10, 18, 28, 0.82)"]}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.courseCard}
+          >
+            <View style={styles.courseTopRow}>
+              <View style={[styles.courseIconBubble, { backgroundColor: "rgba(255,255,255,0.9)" }]}>
+                <Ionicons name={artwork.icon} size={24} color={artwork.accent} />
+              </View>
+              <StatusPill label={course.status} tone="primary" />
+            </View>
+
+            <Text numberOfLines={2} style={[styles.courseName, { color: "#FFFFFF", fontFamily: theme.typography.title }]}>
+              {course.name}
+            </Text>
+            <Text numberOfLines={1} style={[styles.courseCode, { color: "rgba(255,255,255,0.88)" }]}>
+              {course.code}
+            </Text>
+
+            <View style={styles.courseTagsRow}>
+              <View style={[styles.courseTag, styles.courseTagGlass]}>
+                <Text style={[styles.courseTagText, { color: "#FFFFFF" }]}>Módulos</Text>
+              </View>
+              <View style={[styles.courseTag, styles.courseTagGlass]}>
+                <Text style={[styles.courseTagText, { color: "#FFFFFF" }]}>Tareas</Text>
+              </View>
+              <View style={[styles.courseTag, styles.courseTagGlass]}>
+                <Text style={[styles.courseTagText, { color: "#FFFFFF" }]}>Actividad</Text>
+              </View>
+            </View>
+
+            <View style={styles.courseFooterRow}>
+              <Text style={[styles.courseFooterText, { color: "#FFFFFF" }]}>Entrar</Text>
+              <Ionicons name="arrow-forward-circle" size={22} color="#FFFFFF" />
+            </View>
+          </LinearGradient>
+        </ImageBackground>
+      </View>
+    </Pressable>
   );
-}
-
-function estimateCardHeight(item: HomeActivityDto, index: number, isTablet: boolean) {
-  const pattern = isTablet ? [318, 272, 296, 258] : [278, 232, 256, 218];
-  const imageBonus = item.attachments?.some((attachment) => attachment.type === "image") ? 18 : -10;
-  const bodyBonus = item.body.length > 80 ? 16 : item.body.length > 48 ? 8 : 0;
-  const courseBonus = item.courseName ? 0 : -6;
-
-  return pattern[index % pattern.length] + imageBonus + bodyBonus + courseBonus;
-}
-
-function buildMasonryColumns(items: HomeActivityDto[], isTablet: boolean) {
-  const left: MasonryEntry[] = [];
-  const right: MasonryEntry[] = [];
-  let leftHeight = 0;
-  let rightHeight = 0;
-
-  items.forEach((item, index) => {
-    const height = estimateCardHeight(item, index, isTablet);
-    const entry = { item, height };
-
-    if (leftHeight <= rightHeight) {
-      left.push(entry);
-      leftHeight += height + 16;
-    } else {
-      right.push(entry);
-      rightHeight += height + 16;
-    }
-  });
-
-  return [left, right] as const;
 }
 
 export default function StudentDashboardScreen() {
   const theme = useAppTheme();
   const responsive = useResponsive();
-  const { data, isLoading, isFetching, error, refetch } = useHomeFeedQuery();
-  const today = React.useMemo(() => new Date(), []);
-  const columns = React.useMemo(() => buildMasonryColumns(data ?? [], responsive.isTablet), [data, responsive.isTablet]);
-  const featuredItems = React.useMemo(
-    () =>
-      (data ?? [])
-        .filter((item) => item.type === "announcement" || (item.type === "event" && isSameCalendarDay(item.createdAt, today)))
-        .slice(0, 8),
-    [data, today],
-  );
+  const homeQuery = useHomeFeedQuery();
+  const coursesQuery = useStudentCoursesQuery();
+  const coursePanelMaxHeight = responsive.isTablet ? Math.max(320, responsive.height - 280) : undefined;
+
+  const handleRefresh = () => {
+    void Promise.all([homeQuery.refetch(), coursesQuery.refetch()]);
+  };
 
   return (
     <AppScreen
       title="Para ti"
-      refreshing={isFetching}
-      onRefresh={refetch}
+      refreshing={homeQuery.isFetching || coursesQuery.isFetching}
+      onRefresh={handleRefresh}
       compactHeader
       showAppLabel={false}
     >
       <ClayCard style={styles.introCard}>
         <View style={[styles.introRow, { flexDirection: responsive.isTablet ? "row" : "column" }]}>
-          <StudentLogo size={responsive.isTablet ? 64 : 58} />
+          <StudentLogo size={responsive.isTablet ? 60 : 54} />
           <View style={styles.introCopy}>
             <Text style={[styles.introTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>
-              Lo nuevo de tus clases.
+              Un panel más limpio para seguir tus clases.
+            </Text>
+            <Text style={[styles.introBody, { color: theme.colors.textMuted }]}>
+              Cursos a la vista y actividad reciente en una sola columna.
             </Text>
           </View>
         </View>
       </ClayCard>
 
-      <View style={styles.storySection}>
-        <View style={styles.storyHeader}>
-          <Text style={[styles.storyTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Historias del día</Text>
-          <Text style={[styles.storyHint, { color: theme.colors.textSoft }]}>destacados</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>
-          {stories.map((story) => (
-            <View key={story.id} style={styles.storyItem}>
-              <View
-                style={[
-                  styles.storyBubble,
-                  {
-                    backgroundColor:
-                      story.tone === "sky"
-                        ? theme.colors.primarySoft
-                        : story.tone === "mint"
-                          ? `${theme.colors.success}22`
-                          : story.tone === "berry"
-                            ? `${theme.colors.danger}16`
-                            : `${theme.colors.accent}20`,
-                  },
-                ]}
-              >
-                <Ionicons name={story.icon} size={22} color={theme.colors.primary} />
-              </View>
-              <Text style={[styles.storyLabel, { color: theme.colors.text }]}>{story.label}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
-      {isLoading && <LoadingState />}
-      {error && <ErrorState error={error} onRetry={refetch} />}
-      {!isLoading && !error && data?.length === 0 && <EmptyState title="Sin actividad" />}
-
-      {!!featuredItems.length && (
-        <View style={styles.featuredSection}>
-          <View style={styles.feedHeader}>
-            <Text style={[styles.feedTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Destacados</Text>
+      <View style={[styles.dashboardGrid, { flexDirection: responsive.isTablet ? "row" : "column" }]}>
+        <View style={[styles.sidebar, responsive.isTablet ? styles.sidebarTablet : styles.sidebarMobile]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Cursos</Text>
+            <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>{coursesQuery.data?.length ?? 0}</Text>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.featuredRail}>
-            {featuredItems.map((item, index) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.featuredCardWrap,
-                  {
-                    width: responsive.isTablet ? 344 : 286,
-                  },
-                ]}
-              >
+
+          {coursesQuery.isLoading && <LoadingState />}
+          {coursesQuery.error && <ErrorState error={coursesQuery.error} onRetry={coursesQuery.refetch} />}
+          {!coursesQuery.isLoading && !coursesQuery.error && coursesQuery.data?.length === 0 && <EmptyState title="Sin materias" />}
+          {!!coursesQuery.data?.length && (
+            <ScrollView
+              nestedScrollEnabled
+              scrollEnabled={responsive.isTablet}
+              showsVerticalScrollIndicator={responsive.isTablet}
+              style={responsive.isTablet ? [styles.courseListScroll, { maxHeight: coursePanelMaxHeight }] : undefined}
+              contentContainerStyle={styles.courseList}
+            >
+              {coursesQuery.data.map((course) => (
+                <CourseListItem key={course.id} course={course} />
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        <View style={[styles.feedPanel, responsive.isTablet ? styles.feedPanelTablet : styles.feedPanelMobile]}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Actividad reciente</Text>
+            <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>{homeQuery.data?.length ?? 0}</Text>
+          </View>
+
+          {homeQuery.isLoading && <LoadingState />}
+          {homeQuery.error && <ErrorState error={homeQuery.error} onRetry={homeQuery.refetch} />}
+          {!homeQuery.isLoading && !homeQuery.error && homeQuery.data?.length === 0 && <EmptyState title="Sin actividad" />}
+
+          {!!homeQuery.data?.length && (
+            <View style={styles.feedColumn}>
+              {homeQuery.data.map((item) => (
                 <ActivityFeedCard
+                  key={item.id}
                   item={item}
-                  height={responsive.isTablet ? (index % 2 === 0 ? 266 : 244) : 228}
+                  height={estimateCardHeight(item, responsive.isTablet)}
+                  showImages={false}
                   onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
                 />
-              </View>
-            ))}
-          </ScrollView>
+              ))}
+            </View>
+          )}
         </View>
-      )}
-
-      <View style={styles.feedHeader}>
-        <Text style={[styles.feedTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Actividad reciente</Text>
-      </View>
-
-      <View style={styles.masonryRow}>
-        {columns.map((column, columnIndex) => (
-          <View key={`column-${columnIndex}`} style={styles.masonryColumn}>
-            {column.map(({ item, height }) => (
-              <ActivityFeedCard
-                key={item.id}
-                item={item}
-                height={height}
-                onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
-              />
-            ))}
-          </View>
-        ))}
       </View>
     </AppScreen>
   );
@@ -187,7 +172,7 @@ export default function StudentDashboardScreen() {
 const styles = StyleSheet.create({
   introCard: {
     gap: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   introRow: {
     gap: 12,
@@ -195,75 +180,133 @@ const styles = StyleSheet.create({
   },
   introCopy: {
     flex: 1,
+    gap: 4,
   },
   introTitle: {
     fontSize: 17,
     lineHeight: 22,
   },
-  feedHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    marginTop: 4,
+  introBody: {
+    fontSize: 13,
+    lineHeight: 18,
   },
-  feedTitle: {
-    fontSize: 20,
+  dashboardGrid: {
+    gap: 14,
+    alignItems: "flex-start",
   },
-  feedHint: {
-    fontSize: 12,
-  },
-  storySection: {
+  sidebar: {
     gap: 10,
   },
-  storyHeader: {
+  sidebarTablet: {
+    width: 320,
+    flexShrink: 0,
+  },
+  sidebarMobile: {
+    width: "100%",
+  },
+  feedPanel: {
+    flex: 1,
+    gap: 10,
+  },
+  feedPanelTablet: {
+    minWidth: 0,
+  },
+  feedPanelMobile: {
+    width: "100%",
+  },
+  sectionHeader: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
-  },
-  storyTitle: {
-    fontSize: 18,
-  },
-  storyHint: {
-    fontSize: 11,
-    textTransform: "uppercase",
-  },
-  storyRail: {
     gap: 12,
-    paddingRight: 10,
   },
-  storyItem: {
-    gap: 8,
-    alignItems: "center",
-    width: 76,
+  sectionTitle: {
+    fontSize: 20,
   },
-  storyBubble: {
-    width: 68,
-    height: 68,
-    borderRadius: 68,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  storyLabel: {
+  sectionMeta: {
     fontSize: 12,
     fontWeight: "700",
   },
-  featuredSection: {
+  courseList: {
     gap: 10,
   },
-  featuredRail: {
-    gap: 12,
-    paddingRight: 8,
+  courseListScroll: {
+    width: "100%",
   },
-  featuredCardWrap: {
-    flexShrink: 0,
+  courseItemWrap: {
+    width: "100%",
   },
-  masonryRow: {
+  courseCardShell: {
+    borderWidth: 1,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 38,
+    overflow: "hidden",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  courseImageFill: {
+    minHeight: 212,
+  },
+  courseCard: {
+    minHeight: 212,
+    padding: 16,
+    gap: 10,
+  },
+  courseTopRow: {
     flexDirection: "row",
-    gap: 12,
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  masonryColumn: {
-    flex: 1,
-    gap: 16,
+  courseIconBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 52,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  courseName: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
+  courseCode: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+  courseTagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  courseTag: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  courseTagGlass: {
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  courseTagText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  courseFooterRow: {
+    marginTop: "auto",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  courseFooterText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  feedColumn: {
+    gap: 12,
   },
 });

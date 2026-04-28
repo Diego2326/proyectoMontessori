@@ -13,6 +13,7 @@ interface ActivityFeedCardProps {
   item: HomeActivityDto;
   onPress?: () => void;
   height?: number;
+  showImages?: boolean;
 }
 
 function GlassPill({
@@ -48,7 +49,7 @@ function GlassPill({
   );
 }
 
-export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProps) {
+export function ActivityFeedCard({ item, onPress, height, showImages = true }: ActivityFeedCardProps) {
   const theme = useAppTheme();
   const responsive = useResponsive();
   const cardHeight = height ?? (responsive.isTablet ? 292 : 242);
@@ -62,10 +63,10 @@ export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProp
     reminder: { icon: "notifications", tint: theme.colors.danger, bg: `${theme.colors.danger}18`, label: "Recordatorio" },
   }[item.type];
   const metaInk = getReadableAccentColor(meta.tint, meta.bg, theme.colors.text);
-  const imageAttachment = item.attachments?.find((attachment) => attachment.type === "image");
+  const imageAttachment = showImages ? item.attachments?.find((attachment) => attachment.type === "image") : undefined;
   const documentCount = item.attachments?.filter((attachment) => attachment.type === "document").length ?? 0;
   const watermarkInk = theme.mode === "dark" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.18)";
-  const cardHeadline = imageAttachment?.title ?? item.title;
+  const cardHeadline = showImages ? imageAttachment?.title ?? item.title : item.title;
   const cardSubline = item.body && item.body !== cardHeadline ? item.body : undefined;
   const courseLabel =
     item.courseName && item.courseName !== cardHeadline && item.courseName !== cardSubline ? item.courseName : undefined;
@@ -86,8 +87,7 @@ export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProp
     reminder: [hexToRgba(theme.colors.danger, 0.94), hexToRgba(theme.colors.accent, 0.82)],
   } as const;
 
-  const CardBackdrop = imageAttachment?.imageUrl ? ImageBackground : View;
-  const cardBackdropProps = imageAttachment?.imageUrl ? { source: { uri: imageAttachment.imageUrl } } : {};
+  const hasImageBackdrop = Boolean(imageAttachment?.imageUrl);
 
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={({ pressed }) => [{ opacity: pressed ? 0.94 : 1 }, styles.pressableWrap]}>
@@ -104,12 +104,8 @@ export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProp
           },
         ]}
       >
-        <CardBackdrop
-          {...cardBackdropProps}
-          style={styles.backdrop}
-          {...(imageAttachment?.imageUrl ? { resizeMode: "cover" as const } : {})}
-        >
-          {imageAttachment?.imageUrl ? (
+        {hasImageBackdrop ? (
+          <ImageBackground source={{ uri: imageAttachment?.imageUrl }} resizeMode="cover" style={styles.backdrop}>
             <LinearGradient
               colors={["rgba(6, 12, 20, 0.16)", "rgba(8, 14, 24, 0.38)", "rgba(10, 16, 24, 0.86)"]}
               locations={[0, 0.38, 1]}
@@ -181,7 +177,9 @@ export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProp
                 </View>
               </View>
             </LinearGradient>
-          ) : (
+          </ImageBackground>
+        ) : (
+          <View style={styles.backdrop}>
             <LinearGradient colors={fallbackPalette[item.type]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.backdropOverlay}>
               <Ionicons
                 name={meta.icon as keyof typeof Ionicons.glyphMap}
@@ -253,8 +251,8 @@ export function ActivityFeedCard({ item, onPress, height }: ActivityFeedCardProp
                 </View>
               </View>
             </LinearGradient>
-          )}
-        </CardBackdrop>
+          </View>
+        )}
       </View>
     </Pressable>
   );
