@@ -198,16 +198,61 @@ export function getBackgroundDecorPreviewColors(theme: AppTheme, id: BackgroundD
   return preset.preview.map((key) => theme.colors[key]) as [string, string, string];
 }
 
+function shiftTowardCenter(
+  value: number | `${number}%` | undefined,
+  axis: "x" | "y",
+): number | `${number}%` | undefined {
+  if (value === undefined) return undefined;
+
+  if (typeof value === "number") {
+    return value + (axis === "x" ? 28 : 20);
+  }
+
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return value;
+
+  const target = axis === "x" ? 50 : 42;
+  const next = parsed + (target - parsed) * (axis === "x" ? 0.34 : 0.22);
+  return `${next}%` as `${number}%`;
+}
+
+function buildCenterFillShapes(shapes: BackgroundDecorShape[]): BackgroundDecorShape[] {
+  const centerAnchors = [
+    { top: "18%", left: "18%" },
+    { top: "28%", left: "58%" },
+    { top: "46%", left: "34%" },
+    { top: "62%", left: "68%" },
+  ] as const;
+
+  return shapes.slice(0, centerAnchors.length).map((shape, index) => {
+    const anchor = centerAnchors[index];
+    const nextSize = Math.max(84, Math.round(shape.size * (shape.kind === "icon" ? 0.7 : 0.56)));
+
+    return {
+      ...shape,
+      size: nextSize,
+      top: anchor.top,
+      left: anchor.left,
+      right: undefined,
+      bottom: undefined,
+      opacity: Math.max(0.08, shape.opacity * 0.72),
+      depth: Math.min(0.4, shape.depth + 0.06),
+      rotation: shape.rotation ? shape.rotation * 0.7 : undefined,
+      iconSize: shape.iconSize ? Math.round(shape.iconSize * 0.8) : undefined,
+    };
+  });
+}
+
 export function buildBackgroundDecorShapes(theme: AppTheme, id: BackgroundDecorId): BackgroundDecorShape[] {
   const preset = backgroundDecorPresets.find((item) => item.meta.id === id) ?? backgroundDecorPresets[0];
 
-  return preset.shapes.map((shape) => ({
+  const baseShapes = preset.shapes.map((shape) => ({
     kind: shape.kind,
     size: shape.size,
-    top: shape.top,
-    bottom: shape.bottom,
-    left: shape.left,
-    right: shape.right,
+    top: shiftTowardCenter(shape.top, "y"),
+    bottom: shiftTowardCenter(shape.bottom, "y"),
+    left: shiftTowardCenter(shape.left, "x"),
+    right: shiftTowardCenter(shape.right, "x"),
     opacity: shape.opacity,
     depth: shape.depth,
     rotation: shape.rotation,
@@ -216,6 +261,8 @@ export function buildBackgroundDecorShapes(theme: AppTheme, id: BackgroundDecorI
     previewScale: shape.previewScale,
     color: hexToRgba(resolveSeedColor(theme, shape), theme.mode === "dark" ? shape.opacity * 1.16 : shape.opacity),
   }));
+
+  return [...baseShapes, ...buildCenterFillShapes(baseShapes)];
 }
 
 export function getBackgroundDecorPreviewShapes(theme: AppTheme, id: BackgroundDecorId) {

@@ -46,7 +46,7 @@ export default function PrecheckScreen() {
   });
 
   return (
-    <AppScreen title="Recuperar acceso" scroll={false} compactHeader showAppLabel={false}>
+    <AppScreen title="Recuperar acceso" scroll={false} compactHeader showAppLabel={false} showGlobalTopBar={false}>
       <View style={styles.form}>
         <Controller
           control={control}

@@ -1,9 +1,9 @@
-import React, { PropsWithChildren, useRef } from "react";
+import React, { PropsWithChildren } from "react";
 import {
-  Animated,
   Pressable,
   RefreshControl,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -17,6 +17,7 @@ import { useResponsive } from "@/theme/useResponsive";
 import { getReadableAccentColor } from "@/theme/colorUtils";
 import { OfflineBanner } from "./OfflineBanner";
 import { AmbientBackdrop } from "./AmbientBackdrop";
+import { GlobalTopBar } from "./GlobalTopBar";
 
 interface AppScreenProps extends PropsWithChildren {
   title: string;
@@ -27,6 +28,9 @@ interface AppScreenProps extends PropsWithChildren {
   compactHeader?: boolean;
   showAppLabel?: boolean;
   showBackButton?: boolean;
+  showGlobalTopBar?: boolean;
+  hideGlobalSearch?: boolean;
+  fullWidth?: boolean;
 }
 
 export function AppScreen({
@@ -39,11 +43,13 @@ export function AppScreen({
   compactHeader = false,
   showAppLabel = true,
   showBackButton = true,
+  showGlobalTopBar = true,
+  hideGlobalSearch = false,
+  fullWidth = false,
 }: AppScreenProps) {
   const theme = useAppTheme();
   const responsive = useResponsive();
   const navigation = useNavigation();
-  const scrollY = useRef(new Animated.Value(0)).current;
   const canGoBack = showBackButton && navigation.canGoBack();
   const appIconColor = getReadableAccentColor(theme.colors.primary, theme.colors.surfaceStrong, theme.colors.text);
   const content = (
@@ -52,13 +58,15 @@ export function AppScreen({
         styles.content,
         {
           width: "100%",
-          maxWidth: responsive.contentMaxWidth,
+          maxWidth: fullWidth ? undefined : responsive.contentMaxWidth,
           alignSelf: "center",
+          flex: scroll ? undefined : 1,
           paddingTop: responsive.isTablet ? 18 : 8,
           gap: responsive.isTablet ? 14 : 8,
         },
       ]}
     >
+      {showGlobalTopBar && <GlobalTopBar hideSearch={hideGlobalSearch} />}
       <OfflineBanner />
       <View style={[styles.header, { paddingTop: compactHeader ? 0 : responsive.isTablet ? 10 : 2, gap: compactHeader ? 3 : 6 }]}>
         {(canGoBack || showAppLabel) && (
@@ -89,19 +97,21 @@ export function AppScreen({
             )}
           </View>
         )}
-        <Text
-          style={[
-            styles.title,
-            {
-              color: theme.colors.text,
-              fontFamily: theme.typography.title,
-              fontSize: compactHeader ? (responsive.isTablet ? 24 : 21) : responsive.isTablet ? 30 : 24,
-              lineHeight: compactHeader ? (responsive.isTablet ? 30 : 26) : responsive.isTablet ? 36 : 30,
-            },
-          ]}
-        >
-          {title}
-        </Text>
+        {!!title && (
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.colors.text,
+                fontFamily: theme.typography.title,
+                fontSize: compactHeader ? (responsive.isTablet ? 24 : 21) : responsive.isTablet ? 30 : 24,
+                lineHeight: compactHeader ? (responsive.isTablet ? 30 : 26) : responsive.isTablet ? 36 : 30,
+              },
+            ]}
+          >
+            {title}
+          </Text>
+        )}
         {!!subtitle && (
           <Text
             style={[
@@ -117,7 +127,7 @@ export function AppScreen({
           </Text>
         )}
       </View>
-      <View style={{ gap: responsive.isTablet ? 18 : 12 }}>{children}</View>
+      <View style={{ gap: responsive.isTablet ? 18 : 12, flex: scroll ? undefined : 1 }}>{children}</View>
     </View>
   );
 
@@ -130,9 +140,9 @@ export function AppScreen({
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <AmbientBackdrop scrollY={scrollY} />
+      <AmbientBackdrop />
       {scroll ? (
-        <Animated.ScrollView
+        <ScrollView
           contentContainerStyle={[
             styles.container,
             {
@@ -141,19 +151,16 @@ export function AppScreen({
             },
           ]}
           showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: true,
-          })}
           refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> : undefined}
         >
           {content}
-        </Animated.ScrollView>
+        </ScrollView>
       ) : (
         <View
           style={[
             styles.container,
             {
+              flex: 1,
               paddingHorizontal: responsive.horizontalPadding,
               paddingBottom: responsive.isTablet ? 132 : 110,
             },

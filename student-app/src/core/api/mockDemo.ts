@@ -69,6 +69,50 @@ const courses: CourseDto[] = [
     createdAt: "2026-01-10T09:00:00.000Z",
     updatedAt: "2026-04-20T09:00:00.000Z",
   },
+  {
+    id: 204,
+    code: "ART-7A",
+    name: "Arte y Composición",
+    description: "Color, textura, observación y proyectos visuales con materiales mixtos.",
+    subjectId: 3,
+    status: "ACTIVE",
+    allowComments: true,
+    createdAt: "2026-01-11T09:00:00.000Z",
+    updatedAt: "2026-04-21T09:00:00.000Z",
+  },
+  {
+    id: 205,
+    code: "TEC-7B",
+    name: "Tecnología Creativa",
+    description: "Pensamiento computacional, prototipos y resolución de retos digitales.",
+    subjectId: 1,
+    status: "ACTIVE",
+    allowComments: true,
+    createdAt: "2026-01-11T09:00:00.000Z",
+    updatedAt: "2026-04-22T09:00:00.000Z",
+  },
+  {
+    id: 206,
+    code: "SOC-7C",
+    name: "Estudios Sociales",
+    description: "Mapa, comunidad, historia local y análisis de cambios en el entorno.",
+    subjectId: 3,
+    status: "ACTIVE",
+    allowComments: true,
+    createdAt: "2026-01-11T09:00:00.000Z",
+    updatedAt: "2026-04-22T09:00:00.000Z",
+  },
+  {
+    id: 207,
+    code: "ENG-7D",
+    name: "English Workshop",
+    description: "Reading, speaking and project-based writing with collaborative practice.",
+    subjectId: 3,
+    status: "ACTIVE",
+    allowComments: true,
+    createdAt: "2026-01-12T09:00:00.000Z",
+    updatedAt: "2026-04-23T09:00:00.000Z",
+  },
 ];
 
 const modulesByCourse: Record<number, AcademicModuleDto[]> = {
@@ -83,6 +127,18 @@ const modulesByCourse: Record<number, AcademicModuleDto[]> = {
   203: [
     { id: 305, courseId: 203, title: "Narrativa y voz propia", description: "Escritura de relatos y lectura comentada.", position: 1, status: "PUBLISHED" },
   ],
+  204: [
+    { id: 306, courseId: 204, title: "Color y contraste", description: "Exploración de paletas, ritmo visual y composición.", position: 1, status: "PUBLISHED" },
+  ],
+  205: [
+    { id: 307, courseId: 205, title: "Prototipos y lógica", description: "Secuencias, instrucciones y diseño de soluciones.", position: 1, status: "PUBLISHED" },
+  ],
+  206: [
+    { id: 308, courseId: 206, title: "Territorio y comunidad", description: "Organización social, mapas y patrimonio cercano.", position: 1, status: "PUBLISHED" },
+  ],
+  207: [
+    { id: 309, courseId: 207, title: "Stories and dialogue", description: "Reading responses and collaborative speaking practice.", position: 1, status: "PUBLISHED" },
+  ],
 };
 
 const resourcesByModule: Record<number, ContentResourceDto[]> = {
@@ -91,6 +147,15 @@ const resourcesByModule: Record<number, ContentResourceDto[]> = {
   ],
   303: [
     { id: 402, moduleId: 303, title: "Bitácora de observación", description: "Plantilla para el laboratorio semanal.", resourceType: "DOC", contentUrl: "https://example.com/bitacora.docx", position: 1 },
+  ],
+  306: [
+    { id: 403, moduleId: 306, title: "Carta de color", description: "Referencia rápida para combinaciones y contraste.", resourceType: "PDF", contentUrl: "https://example.com/color.pdf", position: 1 },
+  ],
+  307: [
+    { id: 404, moduleId: 307, title: "Tarjetas de secuencias", description: "Guía para construir algoritmos simples.", resourceType: "DOC", contentUrl: "https://example.com/secuencias.docx", position: 1 },
+  ],
+  309: [
+    { id: 405, moduleId: 309, title: "Vocabulary set", description: "Support material for class discussion.", resourceType: "PDF", contentUrl: "https://example.com/vocabulary.pdf", position: 1 },
   ],
 };
 
@@ -151,6 +216,66 @@ const assignmentsByCourse: Record<number, LmsAssignmentDto[]> = {
       allowLateSubmissions: false,
       status: "PUBLISHED",
       publishedAt: "2026-04-22T12:00:00.000Z",
+    },
+  ],
+  204: [
+    {
+      id: 505,
+      courseId: 204,
+      moduleId: 306,
+      title: "Collage de contrastes",
+      description: "Construye una composición usando contraste de forma, color y textura.",
+      instructions: "Presenta una pieza final con breve explicación visual.",
+      maxPoints: 85,
+      dueAt: "2026-05-07T16:00:00.000Z",
+      allowLateSubmissions: false,
+      status: "PUBLISHED",
+      publishedAt: "2026-04-24T12:00:00.000Z",
+    },
+  ],
+  205: [
+    {
+      id: 506,
+      courseId: 205,
+      moduleId: 307,
+      title: "Ruta de instrucciones",
+      description: "Diseña un algoritmo visual para resolver una tarea cotidiana.",
+      instructions: "Entrega esquema y explicación paso a paso.",
+      maxPoints: 90,
+      dueAt: "2026-05-09T15:30:00.000Z",
+      allowLateSubmissions: true,
+      status: "PUBLISHED",
+      publishedAt: "2026-04-24T12:00:00.000Z",
+    },
+  ],
+  206: [
+    {
+      id: 507,
+      courseId: 206,
+      moduleId: 308,
+      title: "Mapa vivo del barrio",
+      description: "Identifica espacios clave, recorridos y puntos de encuentro de la comunidad.",
+      instructions: "Puede ser digital o dibujado a mano con leyenda.",
+      maxPoints: 75,
+      dueAt: "2026-05-10T17:30:00.000Z",
+      allowLateSubmissions: false,
+      status: "PUBLISHED",
+      publishedAt: "2026-04-25T12:00:00.000Z",
+    },
+  ],
+  207: [
+    {
+      id: 508,
+      courseId: 207,
+      moduleId: 309,
+      title: "My weekly reflection",
+      description: "Write a short reflection about one learning moment from this week.",
+      instructions: "Between 180 and 250 words.",
+      maxPoints: 70,
+      dueAt: "2026-05-12T14:00:00.000Z",
+      allowLateSubmissions: true,
+      status: "PUBLISHED",
+      publishedAt: "2026-04-25T12:00:00.000Z",
     },
   ],
 };
@@ -272,6 +397,50 @@ const feedPostsByCourse: Record<number, FeedPostDto[]> = {
       title: "Lectura guiada",
       content: "Mañana comentaremos las voces narrativas y el punto de vista del texto base.",
       createdAt: "2026-04-25T12:15:00.000Z",
+    },
+  ],
+  204: [
+    {
+      id: 1004,
+      courseId: 204,
+      authorId: 18,
+      authorName: "Prof. Elena",
+      title: "Mirar antes de crear",
+      content: "Trae referentes visuales del entorno para comparar composición y contraste.",
+      createdAt: "2026-04-26T09:10:00.000Z",
+    },
+  ],
+  205: [
+    {
+      id: 1005,
+      courseId: 205,
+      authorId: 19,
+      authorName: "Prof. Diego",
+      title: "Pensar en pasos",
+      content: "Hoy revisaremos cómo una instrucción ambigua cambia el resultado del prototipo.",
+      createdAt: "2026-04-26T13:20:00.000Z",
+    },
+  ],
+  206: [
+    {
+      id: 1006,
+      courseId: 206,
+      authorId: 20,
+      authorName: "Prof. Lucía",
+      title: "Mapa y memoria local",
+      content: "Vamos a comparar recorridos cotidianos y puntos de referencia del barrio.",
+      createdAt: "2026-04-27T10:10:00.000Z",
+    },
+  ],
+  207: [
+    {
+      id: 1007,
+      courseId: 207,
+      authorId: 21,
+      authorName: "Prof. Emma",
+      title: "Speaking warm-up",
+      content: "Prepare two short ideas about your favorite reading moment for tomorrow.",
+      createdAt: "2026-04-27T11:45:00.000Z",
     },
   ],
 };

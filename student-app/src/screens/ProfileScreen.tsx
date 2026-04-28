@@ -174,10 +174,10 @@ export default function ProfileScreen() {
               <AppButton label="Ver calificaciones" onPress={() => router.push("/(app)/grades")} variant="ghost" />
               <AppButton label="Ver progreso" onPress={() => router.push("/(app)/progress")} variant="ghost" />
               <AppButton
-                label="Cerrar sesión"
+                label="Cerrar sesion"
                 variant="danger"
                 onPress={() => {
-                  Alert.alert("Cerrar sesión", "¿Deseas salir de tu sesión?", [
+                  Alert.alert("Cerrar sesion", "¿Deseas salir de tu sesion?", [
                     { text: "Cancelar", style: "cancel" },
                     { text: "Salir", style: "destructive", onPress: () => doLogout() },
                   ]);
@@ -258,96 +258,81 @@ export default function ProfileScreen() {
                       )}
                     </View>
                     <Text style={[styles.paletteName, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{palette.name}</Text>
+                    <Text style={[styles.paletteDescription, { color: theme.colors.textMuted }]}>{palette.description}</Text>
                   </Pressable>
                 );
               })}
             </View>
 
-            <View style={styles.colorSection}>
+            <View style={styles.customColorSection}>
               <View style={styles.sectionHead}>
-                <Text style={[styles.sectionLabel, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Color principal</Text>
-                {!!primaryColor && (
-                  <Pressable onPress={() => void setPrimaryColor(null)}>
-                    <Text style={[styles.resetText, { color: theme.colors.primary }]}>Usar paleta</Text>
+                <Text style={[styles.sectionLabel, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Acentos rapidos</Text>
+                {(primaryColor || accentColor) && (
+                  <Pressable onPress={() => resetColorOverrides()}>
+                    <Text style={[styles.resetText, { color: theme.colors.primary }]}>Reiniciar</Text>
                   </Pressable>
                 )}
               </View>
-              <View style={styles.colorGrid}>
-                {colorSwatches.map((swatch) => {
-                  const active = primaryColor === swatch.value;
-                  return (
-                    <Pressable
-                      key={`primary-${swatch.id}`}
-                      onPress={() => void setPrimaryColor(swatch.value)}
-                      style={[
-                        styles.colorOption,
-                        {
-                          borderColor: active ? theme.colors.primary : theme.colors.border,
-                          backgroundColor: active ? theme.colors.card : theme.colors.cardSoft,
-                        },
-                      ]}
-                    >
-                      <View style={[styles.colorDot, { backgroundColor: swatch.value }]}>
-                        {active && <Ionicons name="checkmark" size={14} color={getReadableTextColor(swatch.value)} />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {!!primaryContrast?.isLowContrast && (
-                <View style={[styles.warningRow, { backgroundColor: `${theme.colors.warning}18`, borderColor: `${theme.colors.warning}44` }]}>
-                  <Ionicons name="alert-circle" size={15} color={theme.colors.warning} />
-                  <Text style={[styles.warningText, { color: theme.colors.text }]}>
-                    Este color puede perder contraste en botones o estados.
-                  </Text>
-                </View>
-              )}
-            </View>
+              <Text style={[styles.sectionHint, { color: theme.colors.textMuted }]}>
+                Elige un primario y un secundario para personalizar el tema actual.
+              </Text>
 
-            <View style={styles.colorSection}>
-              <View style={styles.sectionHead}>
-                <Text style={[styles.sectionLabel, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Color acento</Text>
-                {!!accentColor && (
-                  <Pressable onPress={() => void setAccentColor(null)}>
-                    <Text style={[styles.resetText, { color: theme.colors.primary }]}>Usar paleta</Text>
-                  </Pressable>
+              <View style={styles.swatchSection}>
+                <Text style={[styles.swatchLabel, { color: theme.colors.text }]}>Color principal</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatchRail}>
+                  {colorSwatches.map((swatch) => {
+                    const active = primaryColor === swatch.value;
+                    const feedback = assessThemeColorContrast(swatch.value, theme.colors.cardSoft);
+                    return (
+                      <Pressable
+                        key={`primary-${swatch.id}`}
+                        onPress={() => setPrimaryColor(active ? null : swatch.value)}
+                        style={[styles.colorChip, { borderColor: active ? theme.colors.primary : theme.colors.border }]}
+                      >
+                        <View style={[styles.colorDot, { backgroundColor: swatch.value }]} />
+                        <Text style={[styles.colorName, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{swatch.name}</Text>
+                        <Text style={[styles.contrastNote, { color: feedback.isLowContrast ? theme.colors.warning : theme.colors.success }]}>
+                          {feedback.isLowContrast ? "Ajustar" : "OK"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {!!primaryColor && !!primaryContrast && (
+                  <Text style={[styles.contrastHelper, { color: primaryContrast.isLowContrast ? theme.colors.warning : theme.colors.success }]}>
+                    Contraste sobre tarjeta: {primaryContrast.surfaceContrast.toFixed(2)}:1
+                  </Text>
                 )}
               </View>
-              <View style={styles.colorGrid}>
-                {colorSwatches.map((swatch) => {
-                  const active = accentColor === swatch.value;
-                  return (
-                    <Pressable
-                      key={`accent-${swatch.id}`}
-                      onPress={() => void setAccentColor(swatch.value)}
-                      style={[
-                        styles.colorOption,
-                        {
-                          borderColor: active ? theme.colors.primary : theme.colors.border,
-                          backgroundColor: active ? theme.colors.card : theme.colors.cardSoft,
-                        },
-                      ]}
-                    >
-                      <View style={[styles.colorDot, { backgroundColor: swatch.value }]}>
-                        {active && <Ionicons name="checkmark" size={14} color={getReadableTextColor(swatch.value)} />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {!!accentContrast?.isLowContrast && (
-                <View style={[styles.warningRow, { backgroundColor: `${theme.colors.warning}18`, borderColor: `${theme.colors.warning}44` }]}>
-                  <Ionicons name="alert-circle" size={15} color={theme.colors.warning} />
-                  <Text style={[styles.warningText, { color: theme.colors.text }]}>
-                    Este acento puede verse débil sobre algunos fondos.
-                  </Text>
-                </View>
-              )}
-            </View>
 
-            {(primaryColor || accentColor) && (
-              <AppButton label="Restablecer colores" variant="ghost" icon="refresh" onPress={() => void resetColorOverrides()} />
-            )}
+              <View style={styles.swatchSection}>
+                <Text style={[styles.swatchLabel, { color: theme.colors.text }]}>Color secundario</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatchRail}>
+                  {colorSwatches.map((swatch) => {
+                    const active = accentColor === swatch.value;
+                    const feedback = assessThemeColorContrast(swatch.value, theme.colors.cardSoft);
+                    return (
+                      <Pressable
+                        key={`accent-${swatch.id}`}
+                        onPress={() => setAccentColor(active ? null : swatch.value)}
+                        style={[styles.colorChip, { borderColor: active ? theme.colors.primary : theme.colors.border }]}
+                      >
+                        <View style={[styles.colorDot, { backgroundColor: swatch.value }]} />
+                        <Text style={[styles.colorName, { color: theme.colors.text, fontFamily: theme.typography.title }]}>{swatch.name}</Text>
+                        <Text style={[styles.contrastNote, { color: feedback.isLowContrast ? theme.colors.warning : theme.colors.success }]}>
+                          {feedback.isLowContrast ? "Ajustar" : "OK"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {!!accentColor && !!accentContrast && (
+                  <Text style={[styles.contrastHelper, { color: accentContrast.isLowContrast ? theme.colors.warning : theme.colors.success }]}>
+                    Contraste sobre tarjeta: {accentContrast.surfaceContrast.toFixed(2)}:1
+                  </Text>
+                )}
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
@@ -357,44 +342,44 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   layout: {
-    gap: 14,
+    gap: 12,
   },
   card: {
-    gap: 16,
+    gap: 12,
   },
   sideColumn: {
-    gap: 14,
-    alignSelf: "stretch",
+    gap: 12,
   },
   sideCard: {
-    gap: 14,
+    gap: 12,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 18,
   },
   field: {
     gap: 4,
   },
   label: {
     fontSize: 12,
-    letterSpacing: 0.4,
     textTransform: "uppercase",
+    letterSpacing: 0.4,
+    fontWeight: "700",
   },
   value: {
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
   },
   actions: {
     gap: 10,
   },
   themeTrigger: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 12,
   },
   themeTriggerLeft: {
     flexDirection: "row",
@@ -403,77 +388,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   themeTextWrap: {
+    flex: 1,
     gap: 2,
   },
   themeModeText: {
     fontSize: 12,
   },
   inlineBackgroundSection: {
-    gap: 10,
-  },
-  modeRow: {
-    flexDirection: "row",
     gap: 8,
-    flexWrap: "wrap",
-  },
-  modeChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  paletteGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  paletteCard: {
-    width: "48%",
-    borderWidth: 1,
-    borderRadius: 20,
-    padding: 12,
-    gap: 8,
-    position: "relative",
-  },
-  paletteTop: {
-    gap: 10,
-  },
-  swatchRow: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "stretch",
-  },
-  swatchLarge: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-  },
-  previewMiniCol: {
-    gap: 6,
-  },
-  swatchMini: {
-    width: 24,
-    height: 18,
-    borderRadius: 7,
-  },
-  activeCheck: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  paletteName: {
-    fontSize: 16,
-  },
-  colorSection: {
-    gap: 10,
   },
   sectionHead: {
     flexDirection: "row",
@@ -482,32 +404,24 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionLabel: {
-    fontSize: 16,
-  },
-  resetText: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
+    fontSize: 15,
   },
   backgroundRail: {
     gap: 10,
-    paddingRight: 8,
+    paddingRight: 10,
   },
   backgroundInlineCard: {
-    width: 124,
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 10,
+    width: 132,
     gap: 8,
   },
   backgroundPreview: {
-    height: 72,
-    borderRadius: 16,
+    height: 84,
+    borderRadius: 14,
     overflow: "hidden",
+    position: "relative",
   },
   previewCircle: {
     position: "absolute",
@@ -530,57 +444,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backgroundName: {
-    fontSize: 14,
-  },
-  colorOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  warningRow: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
   },
   modalRoot: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
+    padding: 18,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(12, 18, 28, 0.34)",
+    backgroundColor: "rgba(10, 18, 28, 0.28)",
   },
   modalCard: {
     borderWidth: 1,
-    borderRadius: 28,
+    borderRadius: 24,
     padding: 18,
     gap: 16,
+    maxHeight: "84%",
   },
   modalHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
   },
   closeButton: {
     width: 34,
@@ -588,5 +473,115 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  modeChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  paletteGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  paletteCard: {
+    width: "48%",
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 12,
+    gap: 8,
+  },
+  paletteTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  swatchRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+  },
+  swatchLarge: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+  },
+  previewMiniCol: {
+    gap: 5,
+  },
+  swatchMini: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+  },
+  activeCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paletteName: {
+    fontSize: 14,
+  },
+  paletteDescription: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  customColorSection: {
+    gap: 10,
+  },
+  sectionHint: {
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  resetText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  swatchSection: {
+    gap: 8,
+  },
+  swatchLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  swatchRail: {
+    gap: 10,
+    paddingRight: 10,
+  },
+  colorChip: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    gap: 6,
+    width: 88,
+  },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 28,
+  },
+  colorName: {
+    fontSize: 12,
+  },
+  contrastNote: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  contrastHelper: {
+    fontSize: 11,
+    fontWeight: "700",
   },
 });

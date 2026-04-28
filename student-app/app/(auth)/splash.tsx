@@ -25,7 +25,7 @@ export default function SplashScreen() {
   }, [token, isRestoring]);
 
   return (
-    <AppScreen title="Bienvenido" scroll={false} compactHeader showAppLabel={false}>
+    <AppScreen title="Bienvenido" scroll={false} compactHeader showAppLabel={false} showGlobalTopBar={false}>
       <View style={[styles.layout, { flexDirection: responsive.isTablet ? "row" : "column", gap: responsive.isTablet ? 20 : 14 }]}>
         <ClayCard style={[styles.brandCard, { flex: responsive.isTablet ? 1.2 : undefined }]}>
           <StudentLogo size={responsive.isTablet ? 188 : 144} />

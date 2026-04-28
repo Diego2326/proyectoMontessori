@@ -1,5 +1,5 @@
 import React from "react";
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ImageBackground, LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,9 +8,7 @@ import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { EmptyState } from "@/components/EmptyState";
 import { ActivityFeedCard } from "@/components/ActivityFeedCard";
-import { ClayCard } from "@/components/ClayCard";
 import { StatusPill } from "@/components/StatusPill";
-import { StudentLogo } from "@/components/StudentLogo";
 import { getCourseArtwork } from "@/features/courses/courseArtwork";
 import { useStudentCoursesQuery } from "@/features/courses/hooks";
 import { useHomeFeedQuery } from "@/features/home/hooks";
@@ -22,7 +20,7 @@ function estimateCardHeight(item: HomeActivityDto, isTablet: boolean) {
   const baseHeight = isTablet ? 194 : 182;
   const bodyBonus = item.body.length > 96 ? 34 : item.body.length > 64 ? 18 : 0;
   const attachmentBonus = (item.attachments?.filter((attachment) => attachment.type === "document").length ?? 0) > 0 ? 8 : 0;
-  const actionBonus = item.actionLabel ? 8 : 0;
+  const actionBonus = 0;
 
   return baseHeight + bodyBonus + attachmentBonus + actionBonus;
 }
@@ -87,131 +85,180 @@ export default function StudentDashboardScreen() {
   const responsive = useResponsive();
   const homeQuery = useHomeFeedQuery();
   const coursesQuery = useStudentCoursesQuery();
-  const coursePanelMaxHeight = responsive.isTablet ? Math.max(320, responsive.height - 280) : undefined;
+  const [coursesPanelWidth, setCoursesPanelWidth] = React.useState(0);
+  const showSideBySide = responsive.isTablet && responsive.width > responsive.height;
+  const panelMaxHeight = showSideBySide ? Math.max(320, responsive.height - 280) : undefined;
+  const courseGridGap = 12;
+  const minimumCourseCardWidth = showSideBySide ? 248 : 220;
+  const courseColumns = React.useMemo(() => {
+    if (!coursesPanelWidth) return 1;
+    return Math.max(1, Math.min(4, Math.floor((coursesPanelWidth + courseGridGap) / (minimumCourseCardWidth + courseGridGap))));
+  }, [courseGridGap, coursesPanelWidth, minimumCourseCardWidth]);
+  const courseItemWidth = React.useMemo(() => {
+    if (!coursesPanelWidth) return undefined;
+    return (coursesPanelWidth - courseGridGap * (courseColumns - 1)) / courseColumns;
+  }, [courseColumns, courseGridGap, coursesPanelWidth]);
 
   const handleRefresh = () => {
     void Promise.all([homeQuery.refetch(), coursesQuery.refetch()]);
   };
 
+  const handleCoursesPanelLayout = React.useCallback(
+    (event: LayoutChangeEvent) => {
+      const nextWidth = Math.round(event.nativeEvent.layout.width);
+      setCoursesPanelWidth((current) => (current === nextWidth ? current : nextWidth));
+    },
+    [],
+  );
+
   return (
     <AppScreen
-      title="Para ti"
+      title=""
       refreshing={homeQuery.isFetching || coursesQuery.isFetching}
       onRefresh={handleRefresh}
+      scroll={!showSideBySide}
       compactHeader
       showAppLabel={false}
+      fullWidth
     >
-      <ClayCard style={styles.introCard}>
-        <View style={[styles.introRow, { flexDirection: responsive.isTablet ? "row" : "column" }]}>
-          <StudentLogo size={responsive.isTablet ? 60 : 54} />
-          <View style={styles.introCopy}>
-            <Text style={[styles.introTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>
-              Un panel más limpio para seguir tus clases.
-            </Text>
-            <Text style={[styles.introBody, { color: theme.colors.textMuted }]}>
-              Cursos a la vista y actividad reciente en una sola columna.
-            </Text>
-          </View>
-        </View>
-      </ClayCard>
-
-      <View style={[styles.dashboardGrid, { flexDirection: responsive.isTablet ? "row" : "column" }]}>
-        <View style={[styles.sidebar, responsive.isTablet ? styles.sidebarTablet : styles.sidebarMobile]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Cursos</Text>
-            <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>{coursesQuery.data?.length ?? 0}</Text>
-          </View>
-
-          {coursesQuery.isLoading && <LoadingState />}
-          {coursesQuery.error && <ErrorState error={coursesQuery.error} onRetry={coursesQuery.refetch} />}
-          {!coursesQuery.isLoading && !coursesQuery.error && coursesQuery.data?.length === 0 && <EmptyState title="Sin materias" />}
-          {!!coursesQuery.data?.length && (
-            <ScrollView
-              nestedScrollEnabled
-              scrollEnabled={responsive.isTablet}
-              showsVerticalScrollIndicator={responsive.isTablet}
-              style={responsive.isTablet ? [styles.courseListScroll, { maxHeight: coursePanelMaxHeight }] : undefined}
-              contentContainerStyle={styles.courseList}
-            >
-              {coursesQuery.data.map((course) => (
-                <CourseListItem key={course.id} course={course} />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        <View style={[styles.feedPanel, responsive.isTablet ? styles.feedPanelTablet : styles.feedPanelMobile]}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Actividad reciente</Text>
-            <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>{homeQuery.data?.length ?? 0}</Text>
-          </View>
-
-          {homeQuery.isLoading && <LoadingState />}
-          {homeQuery.error && <ErrorState error={homeQuery.error} onRetry={homeQuery.refetch} />}
-          {!homeQuery.isLoading && !homeQuery.error && homeQuery.data?.length === 0 && <EmptyState title="Sin actividad" />}
-
-          {!!homeQuery.data?.length && (
-            <View style={styles.feedColumn}>
-              {homeQuery.data.map((item) => (
-                <ActivityFeedCard
-                  key={item.id}
-                  item={item}
-                  height={estimateCardHeight(item, responsive.isTablet)}
-                  showImages={false}
-                  onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
-                />
-              ))}
+      <View style={[styles.screenLayout, showSideBySide && styles.screenLayoutExpanded]}>
+        <View style={[styles.dashboardGrid, { flexDirection: showSideBySide ? "row" : "column" }, showSideBySide && styles.dashboardGridExpanded]}>
+          <View
+            onLayout={handleCoursesPanelLayout}
+            style={[styles.coursesPanel, showSideBySide ? styles.coursesPanelTablet : styles.coursesPanelMobile]}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Cursos</Text>
+              <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>
+                {coursesQuery.data?.length ?? 0} · {courseColumns} col
+              </Text>
             </View>
-          )}
-        </View>
+
+            {coursesQuery.isLoading && <LoadingState />}
+            {coursesQuery.error && <ErrorState error={coursesQuery.error} onRetry={coursesQuery.refetch} />}
+            {!coursesQuery.isLoading && !coursesQuery.error && coursesQuery.data?.length === 0 && <EmptyState title="Sin materias" />}
+            {!!coursesQuery.data?.length &&
+              (showSideBySide ? (
+                <ScrollView
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  style={[styles.panelScroll, { maxHeight: panelMaxHeight }]}
+                  contentContainerStyle={[styles.courseGrid, { gap: courseGridGap }]}
+                >
+                  {coursesQuery.data.map((course) => (
+                    <View
+                      key={course.id}
+                      style={[
+                        styles.courseGridItem,
+                        courseItemWidth ? { width: courseItemWidth } : styles.courseGridItemFull,
+                      ]}
+                    >
+                      <CourseListItem course={course} />
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={[styles.courseGrid, { gap: courseGridGap }]}>
+                  {coursesQuery.data.map((course) => (
+                    <View
+                      key={course.id}
+                      style={[
+                        styles.courseGridItem,
+                        courseItemWidth ? { width: courseItemWidth } : styles.courseGridItemFull,
+                      ]}
+                    >
+                      <CourseListItem course={course} />
+                    </View>
+                  ))}
+                </View>
+              ))}
+          </View>
+
+          <View style={[styles.activityPanel, showSideBySide ? styles.activityPanelTablet : styles.activityPanelMobile]}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text, fontFamily: theme.typography.title }]}>Actividad reciente</Text>
+              <Text style={[styles.sectionMeta, { color: theme.colors.textSoft }]}>{homeQuery.data?.length ?? 0}</Text>
+            </View>
+
+            {homeQuery.isLoading && <LoadingState />}
+            {homeQuery.error && <ErrorState error={homeQuery.error} onRetry={homeQuery.refetch} />}
+            {!homeQuery.isLoading && !homeQuery.error && homeQuery.data?.length === 0 && <EmptyState title="Sin actividad" />}
+
+            {!!homeQuery.data?.length &&
+              (showSideBySide ? (
+              <ScrollView
+                showsVerticalScrollIndicator
+                style={[styles.panelScroll, { maxHeight: panelMaxHeight }]}
+                contentContainerStyle={styles.feedColumn}
+              >
+                {homeQuery.data.map((item) => (
+                  <ActivityFeedCard
+                    key={item.id}
+                    item={item}
+                    height={estimateCardHeight(item, responsive.isTablet)}
+                    showImages={false}
+                    onCommentsPress={item.commentHref ? () => router.push(item.commentHref as never) : undefined}
+                    onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
+                  />
+                ))}
+              </ScrollView>
+              ) : (
+              <View style={styles.feedColumn}>
+                {homeQuery.data.map((item) => (
+                  <ActivityFeedCard
+                    key={item.id}
+                    item={item}
+                    height={estimateCardHeight(item, responsive.isTablet)}
+                    showImages={false}
+                    onCommentsPress={item.commentHref ? () => router.push(item.commentHref as never) : undefined}
+                    onPress={item.actionHref ? () => router.push(item.actionHref as never) : undefined}
+                  />
+                ))}
+              </View>
+              ))}
+          </View>
+        
+      </View>
       </View>
     </AppScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  introCard: {
-    gap: 8,
-    paddingVertical: 10,
+  screenLayout: {
+    width: "100%",
+    gap: 14,
   },
-  introRow: {
-    gap: 12,
-    alignItems: "center",
-  },
-  introCopy: {
+  screenLayoutExpanded: {
     flex: 1,
-    gap: 4,
-  },
-  introTitle: {
-    fontSize: 17,
-    lineHeight: 22,
-  },
-  introBody: {
-    fontSize: 13,
-    lineHeight: 18,
   },
   dashboardGrid: {
+    width: "100%",
     gap: 14,
-    alignItems: "flex-start",
+    alignItems: "stretch",
   },
-  sidebar: {
+  dashboardGridExpanded: {
+    flex: 1,
+  },
+  coursesPanel: {
     gap: 10,
   },
-  sidebarTablet: {
+  coursesPanelTablet: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  coursesPanelMobile: {
+    width: "100%",
+  },
+  activityPanel: {
+    gap: 10,
+  },
+  activityPanelTablet: {
     width: 320,
     flexShrink: 0,
   },
-  sidebarMobile: {
-    width: "100%",
-  },
-  feedPanel: {
-    flex: 1,
-    gap: 10,
-  },
-  feedPanelTablet: {
-    minWidth: 0,
-  },
-  feedPanelMobile: {
+  activityPanelMobile: {
     width: "100%",
   },
   sectionHeader: {
@@ -227,10 +274,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  courseList: {
-    gap: 10,
+  panelScroll: {
+    width: "100%",
   },
-  courseListScroll: {
+  courseGrid: {
+    width: "100%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+  },
+  courseGridItem: {
+    flexShrink: 0,
+  },
+  courseGridItemFull: {
     width: "100%",
   },
   courseItemWrap: {

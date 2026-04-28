@@ -12,6 +12,7 @@ import { getReadableAccentColor, hexToRgba } from "@/theme/colorUtils";
 interface ActivityFeedCardProps {
   item: HomeActivityDto;
   onPress?: () => void;
+  onCommentsPress?: () => void;
   height?: number;
   showImages?: boolean;
 }
@@ -49,7 +50,7 @@ function GlassPill({
   );
 }
 
-export function ActivityFeedCard({ item, onPress, height, showImages = true }: ActivityFeedCardProps) {
+export function ActivityFeedCard({ item, onPress, onCommentsPress, height, showImages = true }: ActivityFeedCardProps) {
   const theme = useAppTheme();
   const responsive = useResponsive();
   const cardHeight = height ?? (responsive.isTablet ? 292 : 242);
@@ -155,24 +156,16 @@ export function ActivityFeedCard({ item, onPress, height, showImages = true }: A
                   </View>
 
                   <View style={styles.socialRow}>
-                    <GlassPill style={styles.socialPill}>
-                      <Ionicons name="heart-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.likes ?? 0}</Text>
-                    </GlassPill>
-                    <GlassPill style={styles.socialPill}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.comments ?? 0}</Text>
-                    </GlassPill>
-                    <GlassPill style={styles.socialPill}>
-                      <Ionicons name="paper-plane-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>Compartir</Text>
-                    </GlassPill>
-                    {!!item.actionLabel && (
-                      <GlassPill style={styles.socialPill}>
-                        <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
-                        <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.actionLabel}</Text>
-                      </GlassPill>
-                    )}
+                    <Pressable onPress={onCommentsPress} disabled={!onCommentsPress}>
+                      {({ pressed }) => (
+                        <GlassPill style={[styles.socialPill, pressed && onCommentsPress ? styles.pressedPill : undefined]}>
+                          <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFFFFF" />
+                          <Text style={[styles.socialText, { color: "#FFFFFF" }]}>
+                            {item.comments ?? 0} comentario{(item.comments ?? 0) === 1 ? "" : "s"}
+                          </Text>
+                        </GlassPill>
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -229,24 +222,16 @@ export function ActivityFeedCard({ item, onPress, height, showImages = true }: A
                   </View>
 
                   <View style={styles.socialRow}>
-                    <GlassPill style={[styles.socialPill, styles.lightPill]}>
-                      <Ionicons name="heart-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.likes ?? 0}</Text>
-                    </GlassPill>
-                    <GlassPill style={[styles.socialPill, styles.lightPill]}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.comments ?? 0}</Text>
-                    </GlassPill>
-                    <GlassPill style={[styles.socialPill, styles.lightPill]}>
-                      <Ionicons name="paper-plane-outline" size={13} color="#FFFFFF" />
-                      <Text style={[styles.socialText, { color: "#FFFFFF" }]}>Compartir</Text>
-                    </GlassPill>
-                    {!!item.actionLabel && (
-                      <GlassPill style={[styles.socialPill, styles.lightPill]}>
-                        <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
-                        <Text style={[styles.socialText, { color: "#FFFFFF" }]}>{item.actionLabel}</Text>
-                      </GlassPill>
-                    )}
+                    <Pressable onPress={onCommentsPress} disabled={!onCommentsPress}>
+                      {({ pressed }) => (
+                        <GlassPill style={[styles.socialPill, styles.lightPill, pressed && onCommentsPress ? styles.pressedPill : undefined]}>
+                          <Ionicons name="chatbubble-ellipses-outline" size={13} color="#FFFFFF" />
+                          <Text style={[styles.socialText, { color: "#FFFFFF" }]}>
+                            {item.comments ?? 0} comentario{(item.comments ?? 0) === 1 ? "" : "s"}
+                          </Text>
+                        </GlassPill>
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -343,6 +328,9 @@ const styles = StyleSheet.create({
   },
   lightPill: {
     backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  pressedPill: {
+    opacity: 0.86,
   },
   metaLabel: {
     fontSize: 11,

@@ -109,12 +109,44 @@ export function useHomeFeedQuery() {
       );
 
       const activities: HomeActivityDto[] = [];
+      const assignmentCourseById = new Map<number, number>();
+      const assignmentModuleById = new Map<number, number | undefined>();
+      const gradeAssignmentById = new Map<number, number>();
+
+      grades.forEach((grade) => {
+        gradeAssignmentById.set(grade.id, grade.assignmentId);
+      });
+
+      byCourse.forEach(({ course, assignments }) => {
+        assignments.forEach((assignment) => {
+          assignmentCourseById.set(assignment.id, course.id);
+          assignmentModuleById.set(assignment.id, assignment.moduleId);
+        });
+      });
 
       notifications.forEach((item) => {
-        activities.push(buildNotificationActivity(item));
+        const notificationActivity = buildNotificationActivity(item);
+        const refType = item.refType?.toLowerCase();
+
+        if (refType === "assignment" && item.refId) {
+          const courseId = assignmentCourseById.get(item.refId);
+          if (courseId) {
+            notificationActivity.actionHref = `/(app)/assignments/${item.refId}?courseId=${courseId}`;
+          }
+        }
+
+        if (refType === "grade" && item.refId) {
+          const assignmentId = gradeAssignmentById.get(item.refId);
+          const courseId = assignmentId ? assignmentCourseById.get(assignmentId) : undefined;
+          notificationActivity.actionHref =
+            assignmentId && courseId ? `/(app)/assignments/${assignmentId}?courseId=${courseId}` : "/(app)/grades";
+        }
+
+        activities.push(notificationActivity);
       });
 
       grades.forEach((grade) => {
+        const courseId = assignmentCourseById.get(grade.assignmentId);
         activities.push({
           id: `grade-${grade.id}`,
           type: "grade",
@@ -123,8 +155,8 @@ export function useHomeFeedQuery() {
           createdAt: grade.gradedAt,
           authorName: "Prof. del curso",
           authorRole: "Docente",
-          actionLabel: "Ver notas",
-          actionHref: "/(app)/grades",
+          actionLabel: "Ver tarea",
+          actionHref: courseId ? `/(app)/assignments/${grade.assignmentId}?courseId=${courseId}` : "/(app)/grades",
           likes: 3,
           comments: 1,
           attachments: [buildDocumentAttachment(`grade-file-${grade.id}`, "Rúbrica y retroalimentación", "PDF", "mint")],
@@ -151,8 +183,8 @@ export function useHomeFeedQuery() {
           authorRole: course ? "Curso" : "Colegio",
           courseId: event.courseId,
           courseName: course?.name,
-          actionLabel: "Abrir agenda",
-          actionHref: "/(app)/(tabs)/calendar",
+          actionLabel: "Ver evento",
+          actionHref: course ? `/(app)/courses/${course.id}/calendar` : "/(app)/(tabs)/calendar",
           likes: 8,
           comments: 0,
           attachments: [buildImageAttachment(`event-${event.id}-poster`, artwork.title, "sun", artwork.imageUrl, artwork.subtitle)],
@@ -179,8 +211,9 @@ export function useHomeFeedQuery() {
             authorRole: "Docente",
             courseId: course.id,
             courseName: course.name,
-            actionLabel: "Ver curso",
-            actionHref: `/(app)/courses/${course.id}`,
+            actionLabel: "Ver publicación",
+            actionHref: `/(app)/feed/${post.id}/comments?courseId=${course.id}`,
+            commentHref: `/(app)/feed/${post.id}/comments?courseId=${course.id}`,
             likes: 14,
             comments: 4,
             attachments: [buildImageAttachment(`feed-${post.id}-cover`, artwork.title, "sky", artwork.imageUrl, artwork.subtitle)],
@@ -199,7 +232,7 @@ export function useHomeFeedQuery() {
             courseId: course.id,
             courseName: course.name,
             actionLabel: "Abrir tarea",
-            actionHref: `/(app)/courses/${course.id}`,
+            actionHref: `/(app)/assignments/${assignment.id}?courseId=${course.id}`,
             likes: 11,
             comments: 2,
             attachments: [
@@ -231,8 +264,8 @@ export function useHomeFeedQuery() {
               courseId: course.id,
               courseName: course.name,
               moduleName: module.title,
-              actionLabel: "Ver clase",
-              actionHref: `/(app)/courses/${course.id}`,
+              actionLabel: "Ver módulo",
+              actionHref: `/(app)/courses/${course.id}/modules/${module.id}`,
               likes: 7,
               comments: 1,
               attachments: [

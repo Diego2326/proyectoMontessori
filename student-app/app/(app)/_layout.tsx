@@ -11,7 +11,7 @@ function NonStudentBlocked() {
   const logout = useAuthStore((s) => s.logout);
   const theme = useAppTheme();
   return (
-    <AppScreen title="App para alumnos" subtitle="Tu cuenta no tiene rol STUDENT.">
+    <AppScreen title="App para alumnos" subtitle="Tu cuenta no tiene rol STUDENT." showGlobalTopBar={false}>
       <Text style={{ color: theme.colors.text, fontSize: 14, lineHeight: 20 }}>
         Esta aplicación móvil está pensada solo para estudiantes. Usa el portal correspondiente para tu rol.
       </Text>
@@ -27,7 +27,7 @@ export default function AppLayout() {
 
   if (isRestoring) {
     return (
-      <AppScreen title="Cargando..." scroll={false}>
+      <AppScreen title="Cargando..." scroll={false} showGlobalTopBar={false}>
         <LoadingState label="Preparando tu cuenta..." />
       </AppScreen>
     );
@@ -44,6 +44,7 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="profile" />
       <Stack.Screen name="courses/[courseId]" />
       <Stack.Screen name="courses/[courseId]/modules" />
       <Stack.Screen name="courses/[courseId]/modules/[moduleId]" />

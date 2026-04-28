@@ -30,7 +30,7 @@ function TabBarGlass() {
 export default function TabsLayout() {
   const theme = useAppTheme();
   const responsive = useResponsive();
-  const itemRadius = responsive.isTablet ? 24 : 20;
+  const itemRadius = 999;
 
   return (
     <Tabs
@@ -67,10 +67,11 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: {
           borderRadius: itemRadius,
-          marginHorizontal: 3,
-          marginVertical: 3,
+          marginHorizontal: responsive.isTablet ? 5 : 4,
+          marginVertical: responsive.isTablet ? 5 : 4,
+          overflow: "hidden",
         },
-        tabBarActiveBackgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.11)" : "rgba(255,255,255,0.58)",
+        tabBarActiveBackgroundColor: theme.mode === "dark" ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.72)",
       }}
     >
       <Tabs.Screen
@@ -90,8 +91,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: "Avisos",
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications" color={color} size={size} />,
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Tareas",
+          tabBarIcon: ({ color, size }) => <Ionicons name="create" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -99,13 +106,6 @@ export default function TabsLayout() {
         options={{
           title: "Agenda",
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Perfil",
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
         }}
       />
     </Tabs>

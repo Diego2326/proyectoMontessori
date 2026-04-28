@@ -1,12 +1,8 @@
 import React, { useMemo } from "react";
-import { Animated, StyleSheet, View, ViewStyle } from "react-native";
+import { StyleSheet, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BackgroundDecorShape, buildBackgroundDecorShapes } from "@/theme/backgroundDecor";
 import { useAppTheme, useThemeController } from "@/theme/ThemeProvider";
-
-interface AmbientBackdropProps {
-  scrollY: Animated.Value;
-}
 
 function getShapeStyle(shape: BackgroundDecorShape): ViewStyle {
   const base: ViewStyle = {
@@ -69,20 +65,12 @@ function getShapeStyle(shape: BackgroundDecorShape): ViewStyle {
   };
 }
 
-function DecorShape({ shape, scrollY }: { shape: BackgroundDecorShape; scrollY: Animated.Value }) {
-  const translateY = Animated.multiply(scrollY, -shape.depth);
-
+function DecorShape({ shape }: { shape: BackgroundDecorShape }) {
   return (
-    <Animated.View
+    <View
       style={[
         styles.shape,
         getShapeStyle(shape),
-        {
-          transform: [
-            { translateY },
-            ...(shape.rotation ? [{ rotate: `${shape.rotation}deg` }] : []),
-          ],
-        },
       ]}
     >
       {shape.kind === "icon" && !!shape.icon && (
@@ -93,11 +81,11 @@ function DecorShape({ shape, scrollY }: { shape: BackgroundDecorShape; scrollY: 
           style={styles.iconShape}
         />
       )}
-    </Animated.View>
+    </View>
   );
 }
 
-export function AmbientBackdrop({ scrollY }: AmbientBackdropProps) {
+export function AmbientBackdrop() {
   const theme = useAppTheme();
   const { backgroundDecorId } = useThemeController();
   const shapes = useMemo(() => buildBackgroundDecorShapes(theme, backgroundDecorId), [backgroundDecorId, theme]);
@@ -105,7 +93,7 @@ export function AmbientBackdrop({ scrollY }: AmbientBackdropProps) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {shapes.map((shape, index) => (
-        <DecorShape key={`${backgroundDecorId}-${index}-${shape.kind}-${shape.size}`} shape={shape} scrollY={scrollY} />
+        <DecorShape key={`${backgroundDecorId}-${index}-${shape.kind}-${shape.size}`} shape={shape} />
       ))}
     </View>
   );

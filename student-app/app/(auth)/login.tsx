@@ -52,7 +52,7 @@ export default function LoginScreen() {
   });
 
   return (
-    <AppScreen title="Tu campus" scroll={false} compactHeader showAppLabel={false}>
+    <AppScreen title="Tu campus" scroll={false} compactHeader showAppLabel={false} showGlobalTopBar={false}>
       <View style={[styles.layout, { flexDirection: responsive.isTablet ? "row" : "column", gap: responsive.isTablet ? 20 : 16 }]}>
         <ClayCard style={[styles.heroCard, { flex: responsive.isTablet ? 1.15 : undefined }]}>
           <View style={[styles.logoRow, { flexDirection: responsive.isTablet ? "row" : "column", alignItems: responsive.isTablet ? "center" : "flex-start" }]}>

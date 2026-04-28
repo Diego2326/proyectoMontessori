@@ -187,6 +187,7 @@ export interface HomeActivityDto {
   moduleName?: string;
   actionLabel?: string;
   actionHref?: string;
+  commentHref?: string;
   likes?: number;
   comments?: number;
   attachments?: HomeActivityAttachmentDto[];
